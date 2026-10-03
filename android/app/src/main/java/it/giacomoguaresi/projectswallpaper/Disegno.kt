@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.scale
@@ -30,7 +31,7 @@ object Disegno {
     private const val LARGHEZZA_DP = 320
     private const val ALTEZZA_DP = 240
 
-    /** Da questa misura in su (dp, in verticale) l'ora grande e la card completa. */
+    /** Da questa misura in su (dp) stagione e card; sotto, solo ora e data. */
     private const val GRANDE_DP = 200
 
     /** Dopo quante ore il meteo è troppo vecchio per mostrarlo. */
@@ -109,7 +110,7 @@ object Disegno {
     /**
      * Grande: ora, data e stagione in alto; nella card meteo, sole e luna,
      * alberi, boschetti e arbusti, avanzamento e alberi della settimana.
-     * Piccolo: la card con ora e data e una riga di meteo e alberi.
+     * Piccolo: solo ora e data, la data più piccola perché ci stia.
      * Il meteo vecchio di più di METEO_VALIDO non si mostra; il resto sì.
      */
     private fun pannello(context: Context, viste: RemoteViews, grande: Boolean) {
@@ -131,22 +132,19 @@ object Disegno {
             mostra(vista)
         }
 
-        val temperatura = dati?.optIntOrNull("temperatura")?.takeIf { fresco }?.let { "$it°" }
-        val cielo = dati?.optStringOrNull("cielo")?.takeIf { fresco }
-        val alberi = dati?.optIntOrNull("alberi")?.let { plurale(it, "albero", "alberi") }
-        val percentuale = dati?.optIntOrNull("percentuale")
-        if (dati != null && fresco) icona(R.id.icona_cielo, iconaCielo(dati))
-
+        mostra(R.id.intestazione)
         if (!grande) {
-            mostra(R.id.orologio_piccolo, R.id.pannello)
-            testo(R.id.meteo, temperatura, R.id.riga_meteo)
-            testo(R.id.numeri_piccoli, listOfNotNull(alberi, percentuale?.let { "$it%" }).joinToString(" · "),
-                R.id.riga_meteo, R.id.icona_alberi_piccola)
+            viste.setTextViewTextSize(R.id.data, TypedValue.COMPLEX_UNIT_SP, 12f)
             return
         }
-
-        mostra(R.id.intestazione)
         if (dati == null) return
+
+        val temperatura = dati.optIntOrNull("temperatura")?.takeIf { fresco }?.let { "$it°" }
+        val cielo = dati.optStringOrNull("cielo")?.takeIf { fresco }
+        val alberi = dati.optIntOrNull("alberi")?.let { plurale(it, "albero", "alberi") }
+        val percentuale = dati.optIntOrNull("percentuale")
+        if (fresco) icona(R.id.icona_cielo, iconaCielo(dati))
+
         mostra(R.id.pannello)
         testo(R.id.stagione, dati.optStringOrNull("stagione")?.let { " · $it" })
         testo(R.id.meteo, listOfNotNull(temperatura, cielo).joinToString(" · "), R.id.riga_meteo)

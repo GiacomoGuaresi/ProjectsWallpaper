@@ -8,7 +8,7 @@
   Sopra, due versioni che Disegno.kt sceglie secondo la misura:
   - grande: in alto l'ora e la data, in basso la card con meteo, sole e luna,
     numeri e avanzamento;
-  - piccola: solo la card, con ora, data e una riga di meteo e alberi.
+  - piccola: solo l'ora e la data, senza stagione e senza card.
   Ora e data sono TextClock: le aggiorna il sistema, anche tra un giro e l'altro.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -48,7 +48,7 @@
             android:scaleType="centerCrop" />
     </FrameLayout>
 
-    <!-- Grande: l'ora sul cielo, con l'ombra per leggerla anche di giorno. -->
+    <!-- L'ora sul cielo, con l'ombra per leggerla anche di giorno; nel piccolo la data più piccola. -->
     <LinearLayout
         android:id="@+id/intestazione"
         android:layout_width="wrap_content"
@@ -75,6 +75,7 @@
             android:orientation="horizontal">
 
             <TextClock
+                android:id="@+id/data"
                 style="@style/TestoSulCielo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -104,23 +105,12 @@
         android:paddingVertical="8dp"
         android:visibility="gone">
 
-        <!-- Piccola: ora e data in testa alla card. -->
-        <TextClock
-            android:id="@+id/orologio_piccolo"
-            style="@style/TestoPannello"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:format12Hour="HH:mm '·' EEE d MMM"
-            android:format24Hour="HH:mm '·' EEE d MMM"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <!-- Cielo e temperatura; nel piccolo, sulla stessa riga, anche alberi e avanzamento. -->
+        <!-- Cielo e temperatura; l'icona cambia da codice, meglio un'ImageView. -->
         <LinearLayout
             android:id="@+id/riga_meteo"
             style="@style/RigaPannello"
-            android:layout_marginTop="0dp">
+            android:layout_marginTop="0dp"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:id="@+id/icona_cielo"
@@ -138,21 +128,6 @@
                 android:textSize="14sp"
                 android:visibility="gone" />
 
-            <ImageView
-                android:id="@+id/icona_alberi_piccola"
-                style="@style/IconaPannello"
-                android:contentDescription="@null"
-                android:layout_marginStart="10dp"
-                android:src="@drawable/ic_alberi" />
-
-            <TextView
-                android:id="@+id/numeri_piccoli"
-                style="@style/TestoPannelloTenue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginTop="0dp"
-                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Alba, tramonto e luna. -->
