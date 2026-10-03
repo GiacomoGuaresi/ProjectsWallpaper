@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Le immagini generate: vanno su GitHub Pages, non nel repo
+uscita/
+
+# Env
+.env
+.env.*
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/

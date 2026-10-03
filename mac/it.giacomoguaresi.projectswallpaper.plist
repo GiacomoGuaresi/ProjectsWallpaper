@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lancia aggiorna-sfondo.sh all'accesso e poi ogni ora. Se il Mac dormiva,
+  launchd recupera il giro perso al risveglio. installa.sh sostituisce __HOME__
+  con la cartella dell'utente: nei plist "~" non vale.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>it.giacomoguaresi.projectswallpaper</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__HOME__/Library/Application Support/ProjectsWallpaper/aggiorna-sfondo.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/ProjectsWallpaper.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/ProjectsWallpaper.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

@@ -1,0 +1,58 @@
+# Ogni ora fotografa la Foresta di Projects e pubblica le PNG su GitHub Pages.
+# La passphrase dell'account condiviso è il secret FORESTA_PASSPHRASE
+# (Settings → Secrets and variables → Actions → Secrets). Se la foto non riesce
+# il deploy non parte, e su Pages restano le immagini dell'ora prima.
+#
+# GitHub disattiva i cron dei repo pubblici dopo 60 giorni senza commit: per
+# riattivarlo basta "Enable workflow" in Actions, o un commit.
+
+name: Genera
+
+on:
+  schedule:
+    # Al minuto 7: le ore tonde sono quelle in cui i cron di GitHub ritardano di più.
+    - cron: '7 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un giro alla volta; quello in corso non si interrompe a metà.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  genera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Installa Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Fotografa la Foresta
+        run: npm run genera
+        env:
+          FORESTA_PASSPHRASE: ${{ secrets.FORESTA_PASSPHRASE }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: uscita
+
+  deploy:
+    needs: genera
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
