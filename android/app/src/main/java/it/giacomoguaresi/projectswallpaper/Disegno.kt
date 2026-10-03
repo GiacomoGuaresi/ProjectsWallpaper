@@ -6,9 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
-import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
@@ -33,13 +30,6 @@ object Disegno {
     /** Quando il launcher non dice quanto è grande il widget: 4×3 celle, più o meno. */
     private const val LARGHEZZA_DP = 320
     private const val ALTEZZA_DP = 240
-
-    /**
-     * Quanto si stringe l'inquadratura: della foto si tiene il centro, largo e
-     * alto 1/RITAGLIO. Tagliato qui e non con lo zoom dell'animazione, che
-     * vorrebbe una bitmap oltre il limite di memoria dei RemoteViews.
-     */
-    private const val RITAGLIO = 2
 
     /** Lo zoom più forte della carrellata (res/anim/carrellata_zoom.xml): la foto deve restare nitida. */
     private const val ZOOM_MASSIMO = 1.28f
@@ -85,9 +75,8 @@ object Disegno {
     }
 
     /**
-     * Il centro della foto (RITAGLIO), ridotto quanto basta a coprire il widget
-     * allo zoom più forte della carrellata, con le sue proporzioni: il resto del
-     * taglio lo fa l'ImageView (centerCrop).
+     * La foto ridotta quanto basta a coprire il widget allo zoom più forte
+     * della carrellata, con le sue proporzioni: il taglio lo fa l'ImageView (centerCrop).
      * Più grande del necessario peserebbe sul limite di memoria dei RemoteViews.
      */
     private fun foto(context: Context, opzioni: Bundle): Bitmap? {
@@ -103,21 +92,11 @@ object Disegno {
         val larghezza = larghezzaDp * densita * ZOOM_MASSIMO
         val altezza = altezzaDp * densita * ZOOM_MASSIMO
 
-        val regione = Rect(0, 0, misure.outWidth / RITAGLIO, misure.outHeight / RITAGLIO).apply {
-            offset((misure.outWidth - width()) / 2, (misure.outHeight - height()) / 2)
-        }
-        val scala = max(larghezza / regione.width(), altezza / regione.height())
+        val scala = max(larghezza / misure.outWidth, altezza / misure.outHeight)
         var campione = 1
         while (scala * campione * 2 <= 1f) campione *= 2
-        val decoder = runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) BitmapRegionDecoder.newInstance(file.path)
-            else @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(file.path, false)
-        }.getOrNull() ?: return null
-        val foto = try {
-            decoder.decodeRegion(regione, BitmapFactory.Options().apply { inSampleSize = campione })
-        } finally {
-            decoder.recycle()
-        } ?: return null
+        val foto = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = campione })
+            ?: return null
         val finale = scala * campione
         if (finale >= 1f) return foto
         return foto.scale((foto.width * finale).roundToInt(), (foto.height * finale).roundToInt())
