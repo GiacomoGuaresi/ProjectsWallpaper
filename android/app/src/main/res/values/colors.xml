@@ -3,6 +3,8 @@
     <color name="cielo">#1E2A47</color>
     <color name="bosco">#3E7D4A</color>
     <color name="testo_attesa">#C9D3E6</color>
+    <!-- Il verde "completo" di Projects (src/index.css). -->
+    <color name="completo">#367F45</color>
     <color name="pannello">#A60F1A14</color>
     <color name="pannello_testo">#FFFFFF</color>
     <color name="pannello_testo_tenue">#D9FFFFFF</color>

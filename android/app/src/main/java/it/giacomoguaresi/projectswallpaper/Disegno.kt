@@ -30,27 +30,42 @@ object Disegno {
     private const val LARGHEZZA_DP = 320
     private const val ALTEZZA_DP = 240
 
+    /** Da questa misura in su (dp, in verticale) l'ora grande e la card completa. */
+    private const val GRANDE_DP = 200
+
     /** Dopo quante ore il meteo è troppo vecchio per mostrarlo. */
     private val METEO_VALIDO = Duration.ofHours(3)
 
+    /** Le icone Lucide della card del desktop (OverlaySfondo di Projects). */
     private val ICONE_CIELO = mapOf(
-        "sereno" to "☀️",
-        "nuvoloso" to "☁️",
-        "nebbia" to "🌫️",
-        "pioggia" to "🌧️",
-        "temporale" to "⛈️",
-        "neve" to "❄️",
+        "sereno" to R.drawable.ic_sole,
+        "nuvoloso" to R.drawable.ic_nuvola,
+        "nebbia" to R.drawable.ic_nebbia,
+        "pioggia" to R.drawable.ic_pioggia,
+        "temporale" to R.drawable.ic_temporale,
+        "neve" to R.drawable.ic_neve,
+    )
+
+    /** Le fasi di nomeFaseLunare di Projects, nell'ordine dei disegni luna_0…luna_7. */
+    private val FASI_LUNARI = listOf(
+        "Luna nuova", "Falce crescente", "Primo quarto", "Gibbosa crescente",
+        "Luna piena", "Gibbosa calante", "Ultimo quarto", "Falce calante",
+    )
+    private val DISEGNI_LUNA = listOf(
+        R.drawable.luna_0, R.drawable.luna_1, R.drawable.luna_2, R.drawable.luna_3,
+        R.drawable.luna_4, R.drawable.luna_5, R.drawable.luna_6, R.drawable.luna_7,
     )
 
     fun disegna(context: Context, manager: AppWidgetManager, id: Int) {
         val viste = RemoteViews(context.packageName, R.layout.widget_foresta)
-        val foto = foto(context, manager.getAppWidgetOptions(id))
+        val opzioni = manager.getAppWidgetOptions(id)
+        val foto = foto(context, opzioni)
         if (foto != null) {
             viste.setImageViewBitmap(R.id.foto, foto)
             viste.setViewVisibility(R.id.carrellata, View.VISIBLE)
             viste.setViewVisibility(R.id.attesa, View.GONE)
         }
-        pannello(context, viste)
+        pannello(context, viste, grande(opzioni))
         viste.setOnClickPendingIntent(android.R.id.background, apriForesta(context))
         manager.updateAppWidget(id, viste)
     }
@@ -84,48 +99,94 @@ object Disegno {
         return foto.scale((foto.width * finale).roundToInt(), (foto.height * finale).roundToInt())
     }
 
-    /** Giorno (TextClock), meteo se è fresco, alberi e percentuale. Senza dati, nascosto. */
-    private fun pannello(context: Context, viste: RemoteViews) {
-        val dati = runCatching { JSONObject(Foto.DATI.file(context).readText()) }.getOrNull() ?: return
-        val generato = runCatching { Instant.parse(dati.getString("generato")) }.getOrNull() ?: return
-
-        val meteo = if (Duration.between(generato, Instant.now()) < METEO_VALIDO) {
-            listOfNotNull(
-                icona(dati),
-                dati.optIntOrNull("temperatura")?.let { "$it°" },
-            ).joinToString(" ")
-        } else {
-            ""
-        }
-        if (meteo.isNotEmpty()) {
-            viste.setTextViewText(R.id.meteo, " · $meteo")
-            viste.setViewVisibility(R.id.meteo, View.VISIBLE)
-        }
-
-        val numeri = listOfNotNull(
-            dati.optIntOrNull("alberi")?.let { if (it == 1) "1 albero" else "$it alberi" },
-            dati.optIntOrNull("percentuale")?.let { "$it%" },
-        )
-        if (numeri.isNotEmpty()) {
-            viste.setTextViewText(R.id.numeri, "🌳 " + numeri.joinToString(" · "))
-            viste.setViewVisibility(R.id.numeri, View.VISIBLE)
-        }
-        viste.setViewVisibility(R.id.pannello, View.VISIBLE)
+    /** In verticale il widget è largo MIN_WIDTH e alto MAX_HEIGHT. */
+    private fun grande(opzioni: Bundle): Boolean {
+        val larghezza = opzioni.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: LARGHEZZA_DP
+        val altezza = opzioni.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: ALTEZZA_DP
+        return larghezza >= GRANDE_DP && altezza >= GRANDE_DP
     }
 
+    /**
+     * Grande: ora, data e stagione in alto; nella card meteo, sole e luna,
+     * alberi, boschetti e arbusti, avanzamento e alberi della settimana.
+     * Piccolo: la card con ora e data e una riga di meteo e alberi.
+     * Il meteo vecchio di più di METEO_VALIDO non si mostra; il resto sì.
+     */
+    private fun pannello(context: Context, viste: RemoteViews, grande: Boolean) {
+        val dati = runCatching { JSONObject(Foto.DATI.file(context).readText()) }.getOrNull()
+        val generato = dati?.let { runCatching { Instant.parse(it.getString("generato")) }.getOrNull() }
+        val fresco = generato != null && Duration.between(generato, Instant.now()) < METEO_VALIDO
+
+        fun mostra(vararg viste_: Int) = viste_.forEach { viste.setViewVisibility(it, View.VISIBLE) }
+        /** Il testo e le viste che vanno con lui (riga, icona), solo se c'è. */
+        fun testo(vista: Int, valore: String?, vararg insieme: Int): Boolean {
+            if (valore.isNullOrEmpty()) return false
+            viste.setTextViewText(vista, valore)
+            mostra(vista, *insieme)
+            return true
+        }
+        fun icona(vista: Int, disegno: Int?) {
+            if (disegno == null) return
+            viste.setImageViewResource(vista, disegno)
+            mostra(vista)
+        }
+
+        val temperatura = dati?.optIntOrNull("temperatura")?.takeIf { fresco }?.let { "$it°" }
+        val cielo = dati?.optStringOrNull("cielo")?.takeIf { fresco }
+        val alberi = dati?.optIntOrNull("alberi")?.let { plurale(it, "albero", "alberi") }
+        val percentuale = dati?.optIntOrNull("percentuale")
+        if (dati != null && fresco) icona(R.id.icona_cielo, iconaCielo(dati))
+
+        if (!grande) {
+            mostra(R.id.orologio_piccolo, R.id.pannello)
+            testo(R.id.meteo, temperatura, R.id.riga_meteo)
+            testo(R.id.numeri_piccoli, listOfNotNull(alberi, percentuale?.let { "$it%" }).joinToString(" · "),
+                R.id.riga_meteo, R.id.icona_alberi_piccola)
+            return
+        }
+
+        mostra(R.id.intestazione)
+        if (dati == null) return
+        mostra(R.id.pannello)
+        testo(R.id.stagione, dati.optStringOrNull("stagione")?.let { " · $it" })
+        testo(R.id.meteo, listOfNotNull(temperatura, cielo).joinToString(" · "), R.id.riga_meteo)
+
+        testo(R.id.alba, dati.optStringOrNull("alba"), R.id.riga_sole, R.id.icona_alba)
+        testo(R.id.tramonto, dati.optStringOrNull("tramonto"), R.id.riga_sole, R.id.icona_tramonto)
+        val luna = dati.optStringOrNull("luna")
+        if (testo(R.id.luna, luna, R.id.riga_sole)) icona(R.id.icona_luna, DISEGNI_LUNA.getOrNull(FASI_LUNARI.indexOf(luna)))
+
+        testo(R.id.numeri, listOfNotNull(
+            alberi,
+            dati.optIntOrNull("boschetti")?.let { plurale(it, "boschetto", "boschetti") },
+            dati.optIntOrNull("arbusti")?.let { plurale(it, "arbusto", "arbusti") },
+        ).joinToString(" · "), R.id.riga_numeri)
+
+        if (percentuale != null) {
+            viste.setProgressBar(R.id.barra, 100, percentuale, false)
+            val settimana = dati.optIntOrNull("settimana")?.takeIf { it > 0 }
+            testo(R.id.percentuale, listOfNotNull("$percentuale%", settimana?.let { "+$it in settimana" }).joinToString(" · "),
+                R.id.avanzamento)
+        }
+    }
+
+    private fun plurale(n: Int, uno: String, tanti: String) = "$n ${if (n == 1) uno else tanti}"
+
     /** Come sul desktop: di notte col cielo sereno la luna, non il sole. */
-    private fun icona(dati: JSONObject): String? {
-        val cielo = dati.optString("cielo").takeIf { it.isNotEmpty() } ?: return null
+    private fun iconaCielo(dati: JSONObject): Int? {
+        val cielo = dati.optStringOrNull("cielo") ?: return null
         if (cielo == "sereno") {
             val alba = runCatching { LocalTime.parse(dati.getString("alba")) }.getOrNull()
             val tramonto = runCatching { LocalTime.parse(dati.getString("tramonto")) }.getOrNull()
             val adesso = LocalTime.now()
-            if (alba != null && tramonto != null && (adesso < alba || adesso > tramonto)) return "🌙"
+            if (alba != null && tramonto != null && (adesso < alba || adesso > tramonto)) return R.drawable.ic_luna
         }
         return ICONE_CIELO[cielo]
     }
 
     private fun JSONObject.optIntOrNull(nome: String): Int? = if (has(nome) && !isNull(nome)) optInt(nome) else null
+
+    private fun JSONObject.optStringOrNull(nome: String): String? = optString(nome).takeIf { has(nome) && !isNull(nome) && it.isNotEmpty() }
 
     private fun apriForesta(context: Context): PendingIntent = PendingIntent.getActivity(
         context,

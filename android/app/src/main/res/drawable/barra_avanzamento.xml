@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La barra delle completate, come sul desktop: binario bianco al 20% e il verde "completo" di Projects. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape>
+            <solid android:color="#33FFFFFF" />
+            <corners android:radius="3dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <solid android:color="@color/completo" />
+                <corners android:radius="3dp" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

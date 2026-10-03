@@ -120,8 +120,8 @@ async function diagnosi(pagina: Page, nome: Formato, registro: string[]) {
 /**
  * I dati per il pannello del widget Android, letti dal testo della card del
  * desktop (OverlaySfondo di Projects), per esempio:
- *   "Sabato 3 ottobre · Autunno\n18°\n· sereno a Milano\n07:23\n18:59\n…
- *    34 alberi · 14 boschetti · 3 arbusti\n34% completato…"
+ *   "Sabato 3 ottobre · Autunno\n18°\n· sereno a Milano\n07:23\n18:59\nUltimo quarto\n
+ *    34 alberi · 14 boschetti · 3 arbusti\n34% completato\n+16 alberi questa settimana…"
  * Quello che non si trova resta fuori: il widget mostra il resto.
  */
 function datiWidget(testo: string, generato: string) {
@@ -132,12 +132,18 @@ function datiWidget(testo: string, generato: string) {
   const [alba, tramonto] = testo.match(/\b\d{2}:\d{2}\b/g) ?? []
   return {
     generato,
+    stagione: testo.match(/^[^\n]*·\s*(Primavera|Estate|Autunno|Inverno)\b/i)?.[1],
     temperatura: numero(/(-?\d+)°/),
     cielo: testo.match(/·\s*(sereno|nuvoloso|nebbia|pioggia|temporale|neve)\b/i)?.[1].toLowerCase(),
     alba,
     tramonto,
+    // nomeFaseLunare di Projects
+    luna: testo.match(/\b(Luna nuova|Falce crescente|Primo quarto|Gibbosa crescente|Luna piena|Gibbosa calante|Ultimo quarto|Falce calante)\b/)?.[1],
     alberi: numero(/(\d+) alber[oi] ·/),
+    boschetti: numero(/(\d+) boschett[oi]/),
+    arbusti: numero(/(\d+) arbust[oi]/),
     percentuale: numero(/(\d+)% completato/),
+    settimana: numero(/\+(\d+) alber[oi] questa settimana/),
   }
 }
 

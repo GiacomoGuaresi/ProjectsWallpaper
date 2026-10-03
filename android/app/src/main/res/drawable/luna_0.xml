@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La luna di Projects (src/ui/foresta/Cielo.tsx, Luna) alla fase 0/8. Generata, come le altre luna_*. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <group android:translateX="20" android:translateY="20">
+        <path android:fillAlpha="0.12" android:fillColor="#FFF8E1" android:pathData="M-19,0a19,19 0 1,0 38,0a19,19 0 1,0 -38,0" />
+        <path android:fillColor="#3A4865" android:pathData="M-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0" />
+        <group>
+            <path android:fillColor="#FDF6DC" android:pathData="M0,-14 A14,14 0 0 1 0,14 A14.000,14 0 0 0 0,-14 Z" />
+        </group>
+    </group>
+</vector>

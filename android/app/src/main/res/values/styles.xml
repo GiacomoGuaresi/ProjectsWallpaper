@@ -1,0 +1,44 @@
+<resources>
+    <style name="TestoSulCielo">
+        <item name="android:textColor">@color/pannello_testo</item>
+        <item name="android:shadowColor">#99000000</item>
+        <item name="android:shadowRadius">6</item>
+        <item name="android:shadowDy">1</item>
+    </style>
+
+    <style name="TestoPannello">
+        <item name="android:textColor">@color/pannello_testo</item>
+    </style>
+
+    <style name="TestoPannelloTenue">
+        <item name="android:textColor">@color/pannello_testo_tenue</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">2dp</item>
+    </style>
+
+    <!-- Una riga della card: icone e testo in fila, nascosta finché non ha dati. -->
+    <style name="RigaPannello">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">3dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
+    <!-- Le icone piccole della card, come size-4 sul desktop. -->
+    <style name="IconaPannello">
+        <item name="android:layout_width">14dp</item>
+        <item name="android:layout_height">14dp</item>
+        <item name="android:alpha">0.85</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
+    <style name="TestoRiga" parent="TestoPannelloTenue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginTop">0dp</item>
+    </style>
+</resources>

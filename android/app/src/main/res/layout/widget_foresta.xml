@@ -3,7 +3,13 @@
   Sotto, finché la foto non c'è, il cielo e una riga d'attesa. Poi la
   carrellata: la foto, più larga del widget, che scorre piano avanti e
   indietro (res/anim/carrellata.xml), sempre in centerCrop: le proporzioni
-  restano quelle vere. Sopra, in basso a sinistra, il pannello.
+  restano quelle vere.
+
+  Sopra, due versioni che Disegno.kt sceglie secondo la misura:
+  - grande: in alto l'ora e la data, in basso la card con meteo, sole e luna,
+    numeri e avanzamento;
+  - piccola: solo la card, con ora, data e una riga di meteo e alberi.
+  Ora e data sono TextClock: le aggiorna il sistema, anche tra un giro e l'altro.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -42,6 +48,50 @@
             android:scaleType="centerCrop" />
     </FrameLayout>
 
+    <!-- Grande: l'ora sul cielo, con l'ombra per leggerla anche di giorno. -->
+    <LinearLayout
+        android:id="@+id/intestazione"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextClock
+            style="@style/TestoSulCielo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:format12Hour="HH:mm"
+            android:format24Hour="HH:mm"
+            android:includeFontPadding="false"
+            android:textSize="48sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextClock
+                style="@style/TestoSulCielo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="EEEE d MMMM"
+                android:format24Hour="EEEE d MMMM"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/stagione"
+                style="@style/TestoSulCielo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
     <LinearLayout
         android:id="@+id/pannello"
         android:layout_width="wrap_content"
@@ -50,41 +100,146 @@
         android:layout_margin="10dp"
         android:background="@drawable/sfondo_pannello"
         android:orientation="vertical"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="6dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
         android:visibility="gone">
 
-        <LinearLayout
+        <!-- Piccola: ora e data in testa alla card. -->
+        <TextClock
+            android:id="@+id/orologio_piccolo"
+            style="@style/TestoPannello"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:format12Hour="HH:mm '·' EEE d MMM"
+            android:format24Hour="HH:mm '·' EEE d MMM"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
-            <!-- Il giorno lo tiene aggiornato TextClock, anche a mezzanotte tra un giro e l'altro. -->
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:format12Hour="EEE d MMM"
-                android:format24Hour="EEE d MMM"
-                android:textColor="@color/pannello_testo"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+        <!-- Cielo e temperatura; nel piccolo, sulla stessa riga, anche alberi e avanzamento. -->
+        <LinearLayout
+            android:id="@+id/riga_meteo"
+            style="@style/RigaPannello"
+            android:layout_marginTop="0dp">
+
+            <ImageView
+                android:id="@+id/icona_cielo"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/meteo"
+                style="@style/TestoPannello"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/pannello_testo"
-                android:textSize="13sp"
+                android:layout_marginStart="5dp"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/icona_alberi_piccola"
+                style="@style/IconaPannello"
+                android:contentDescription="@null"
+                android:layout_marginStart="10dp"
+                android:src="@drawable/ic_alberi" />
+
+            <TextView
+                android:id="@+id/numeri_piccoli"
+                style="@style/TestoPannelloTenue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="0dp"
                 android:visibility="gone" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/numeri"
-            android:layout_width="wrap_content"
+        <!-- Alba, tramonto e luna. -->
+        <LinearLayout
+            android:id="@+id/riga_sole"
+            style="@style/RigaPannello">
+
+            <ImageView
+                android:id="@+id/icona_alba"
+                style="@style/IconaPannello"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_alba" />
+
+            <TextView
+                android:id="@+id/alba"
+                style="@style/TestoRiga"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/icona_tramonto"
+                style="@style/IconaPannello"
+                android:contentDescription="@null"
+                android:layout_marginStart="10dp"
+                android:src="@drawable/ic_tramonto" />
+
+            <TextView
+                android:id="@+id/tramonto"
+                style="@style/TestoRiga"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/icona_luna"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="10dp"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/luna"
+                style="@style/TestoRiga"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Alberi, boschetti e arbusti. -->
+        <!-- Non un drawableStart: l'icona deve stare a 14dp come le altre. -->
+        <LinearLayout
+            android:id="@+id/riga_numeri"
+            style="@style/RigaPannello"
+            tools:ignore="UseCompoundDrawables">
+
+            <ImageView
+                style="@style/IconaPannello"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_alberi"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/numeri"
+                style="@style/TestoRiga" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/avanzamento"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="@color/pannello_testo_tenue"
-            android:textSize="12sp"
-            android:visibility="gone" />
+            android:layout_marginTop="5dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/barra"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="0dp"
+                android:layout_height="6dp"
+                android:layout_weight="1"
+                android:max="100"
+                android:minWidth="80dp"
+                android:progressDrawable="@drawable/barra_avanzamento" />
+
+            <TextView
+                android:id="@+id/percentuale"
+                style="@style/TestoPannelloTenue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
