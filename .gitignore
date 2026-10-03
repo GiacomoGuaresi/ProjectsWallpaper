@@ -12,3 +12,6 @@ uscita/
 .DS_Store
 .vscode/
 .idea/
+
+# Screenshot e registro quando la foto non riesce
+diagnosi/

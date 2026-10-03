@@ -11,11 +11,12 @@
  *   FORESTA_INDIRIZZO=http://localhost:5173/Projects/ npm run genera
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium, type Browser } from 'playwright'
+import { chromium, type Browser, type Page } from 'playwright'
 
 const INDIRIZZO = process.env.FORESTA_INDIRIZZO ?? 'https://giacomoguaresi.github.io/Projects/'
 const PASSPHRASE = process.env.FORESTA_PASSPHRASE
 const USCITA = new URL('../uscita/', import.meta.url)
+const DIAGNOSI = new URL('../diagnosi/', import.meta.url)
 /** Login, attività, arbusti e meteo: Open-Meteo da solo può metterci 8 s. */
 const ATTESA_MASSIMA = 60_000
 /** Dopo il "pronto", un attimo perché font e filtri SVG finiscano di disegnarsi. */
@@ -38,8 +39,17 @@ async function fotografa(browser: Browser, nome: Formato) {
     locale: 'it-IT',
     reducedMotion: 'reduce',
   })
+  const pagina = await contesto.newPage()
+  // Per capire cosa è andato storto: la console della pagina e le richieste fallite.
+  const registro: string[] = []
+  pagina.on('console', (m) => registro.push(`[console.${m.type()}] ${m.text()}`))
+  pagina.on('pageerror', (e) => registro.push(`[pageerror] ${e.message}`))
+  pagina.on('requestfailed', (r) => registro.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText ?? ''}`))
+  pagina.on('response', (r) => {
+    if (r.status() >= 400) registro.push(`[http ${r.status()}] ${r.url()}`)
+  })
+
   try {
-    const pagina = await contesto.newPage()
     await pagina.goto(`${INDIRIZZO}#/foresta?sfondo`)
 
     // Senza sessione compare la passphrase; con la sessione, direttamente la scena.
@@ -50,6 +60,10 @@ async function fotografa(browser: Browser, nome: Formato) {
       if (!PASSPHRASE) throw new Error('Serve la passphrase: manca FORESTA_PASSPHRASE')
       await passphrase.fill(PASSPHRASE)
       await passphrase.press('Enter')
+      // Passphrase sbagliata o rete giù: la schermata d'accesso lo dice in un role="alert".
+      const avviso = pagina.locator('[role="alert"]')
+      await avviso.or(pronto).first().waitFor({ state: 'attached', timeout: ATTESA_MASSIMA })
+      if (await avviso.isVisible()) throw new Error(`Accesso non riuscito: ${await avviso.innerText()}`)
     }
 
     await pronto.waitFor({ state: 'attached', timeout: ATTESA_MASSIMA })
@@ -57,8 +71,38 @@ async function fotografa(browser: Browser, nome: Formato) {
     const file = new URL(`${nome}.png`, USCITA)
     await pagina.screenshot({ path: file.pathname, animations: 'disabled' })
     console.log(`${nome}: ${larga * densita}×${alta * densita} → uscita/${nome}.png`)
+  } catch (errore) {
+    await diagnosi(pagina, nome, registro)
+    throw errore
   } finally {
     await contesto.close()
+  }
+}
+
+/**
+ * Quando una foto non riesce: screenshot, testo della pagina e registro in
+ * `diagnosi/` (in CI diventano un artifact del run). Mai in `uscita/`, che si
+ * pubblica. Il testo visibile non contiene la passphrase, che sta solo nel campo.
+ */
+async function diagnosi(pagina: Page, nome: Formato, registro: string[]) {
+  try {
+    mkdirSync(DIAGNOSI, { recursive: true })
+    await pagina.screenshot({ path: new URL(`${nome}.png`, DIAGNOSI).pathname })
+    const testo = await pagina.locator('body').innerText({ timeout: 2000 }).catch(() => '(nessun testo)')
+    const html = await pagina.evaluate(() => document.documentElement.outerHTML.length)
+    const riassunto = [
+      `indirizzo: ${pagina.url()}`,
+      `pronto: ${await pagina.evaluate(() => document.documentElement.dataset.sfondoPronto ?? 'no')}`,
+      `html: ${html} caratteri`,
+      '--- testo visibile ---',
+      testo,
+      '--- registro ---',
+      ...registro,
+    ].join('\n')
+    writeFileSync(new URL(`${nome}.txt`, DIAGNOSI), riassunto + '\n')
+    console.error(riassunto)
+  } catch (e) {
+    console.error('Diagnosi non riuscita', e)
   }
 }
 
