@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Foresta</string>
+    <string name="widget_nome">Foresta</string>
+    <string name="widget_descrizione">La Foresta di Projects, aggiornata ogni ora</string>
+    <string name="widget_attesa">La Foresta sta arrivando…</string>
+</resources>

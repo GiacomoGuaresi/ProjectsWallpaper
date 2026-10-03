@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Il vetro scuro della card del desktop (#0f1a14 al 55%), un po' più pieno perché sotto la scena si muove. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/pannello" />
+    <corners android:radius="12dp" />
+</shape>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sotto, finché la foto non c'è, il cielo e una riga d'attesa. Poi la
+  carrellata: la foto, più larga del widget, che scorre piano avanti e
+  indietro (res/anim/carrellata.xml), sempre in centerCrop: le proporzioni
+  restano quelle vere. Sopra, in basso a sinistra, il pannello.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/sfondo_widget"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <TextView
+        android:id="@+id/attesa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:padding="16dp"
+        android:gravity="center"
+        android:text="@string/widget_attesa"
+        android:textColor="@color/testo_attesa"
+        android:textSize="14sp" />
+
+    <FrameLayout
+        android:id="@+id/carrellata"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layoutAnimation="@anim/carrellata_avvio"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/foto"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="@dimen/margine_carrellata_negativo"
+            android:layout_marginEnd="@dimen/margine_carrellata_negativo"
+            android:contentDescription="@string/widget_descrizione"
+            android:scaleType="centerCrop" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/pannello"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="10dp"
+        android:background="@drawable/sfondo_pannello"
+        android:orientation="vertical"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Il giorno lo tiene aggiornato TextClock, anche a mezzanotte tra un giro e l'altro. -->
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="EEE d MMM"
+                android:format24Hour="EEE d MMM"
+                android:textColor="@color/pannello_testo"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/meteo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/pannello_testo"
+                android:textSize="13sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/numeri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="@color/pannello_testo_tenue"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

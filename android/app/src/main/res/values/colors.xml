@@ -1,0 +1,9 @@
+<resources>
+    <!-- Il cielo di notte della Foresta: è lo sfondo finché la foto non arriva. -->
+    <color name="cielo">#1E2A47</color>
+    <color name="bosco">#3E7D4A</color>
+    <color name="testo_attesa">#C9D3E6</color>
+    <color name="pannello">#A60F1A14</color>
+    <color name="pannello_testo">#FFFFFF</color>
+    <color name="pannello_testo_tenue">#D9FFFFFF</color>
+</resources>

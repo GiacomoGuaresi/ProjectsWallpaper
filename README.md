@@ -7,10 +7,11 @@ GitHub Actions (ogni ora)                GitHub Pages                     dispos
 Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (launchd, ogni ora)
 entra con la passphrase, fotografa                                         Windows (Utilità di pianificazione)
                                                                            Linux (timer systemd utente)
+                                       …/widget.png + widget.json  ──►  Android (widget, WorkManager)
 ```
 
 - **Pipeline** ([`pipeline/genera.ts`](pipeline/genera.ts), [`genera.yml`](.github/workflows/genera.yml)): Chromium headless apre la [modalità sfondo](https://github.com/GiacomoGuaresi/Projects/blob/main/doc/08-interfaccia.md) di Projects, cioè solo la scena senza interfaccia, con l'ora di Roma e "riduci movimento". Aspetta che dati e meteo siano arrivati e salva una PNG per formato. Se qualcosa va storto il deploy non parte, e restano le foto dell'ora prima.
-- **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600) e `info.json` (quando è stata generata). Sono pubbliche, quindi niente titoli né nomi di progetti.
+- **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600), `widget.png` (1600×1200, solo la scena), `widget.json` (meteo, alba e tramonto, alberi e avanzamento, letti dalla card del desktop) e `info.json` (quando sono state generate). Sono pubbliche, quindi niente titoli né nomi di progetti.
 - **Overlay**: in basso a sinistra una card con data, meteo e temperatura a Milano, alba, tramonto e luna, e i numeri della foresta (alberi, boschetti, arbusti, avanzamento, alberi piantati in settimana). Pannelli e posizione si scelgono per formato con `parametri` in `FORMATI` ([`genera.ts`](pipeline/genera.ts)), ad esempio `pannelli=oggi,numeri&posizione=basso-sinistra`. Tutte le opzioni sono nella doc di Projects, "Modalità sfondo".
 - **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato ogni ora e all'accesso dal pianificatore del sistema. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
 
@@ -56,6 +57,33 @@ Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché sa
 - File: `~/.local/share/projectswallpaper/` (foto), `~/.config/projectswallpaper/config.env` (desktop e display salvati). Se cambi desktop, rilancia `installa.sh`.
 - Su sway lo sfondo vale fino al riavvio di sway. Per tenerlo, aggiungi alla config: `output * bg ~/.local/share/projectswallpaper/ultima.png fill`.
 
+## Android
+
+Un widget per la home con la Foresta: la vista scorre lenta sulla foto (25 s per andare, 25 per tornare) e in basso a sinistra un pannello con giorno, meteo, alberi e avanzamento. Toccandolo si apre la Foresta. Solo il widget: lo sfondo del telefono resta com'è.
+
+- Installazione: l'APK `foresta-*.apk` dall'ultima [Release](https://github.com/GiacomoGuaresi/ProjectsWallpaper/releases) (consentire le app da origini sconosciute), poi dalla scelta dei widget del launcher **Foresta**. Non c'è un'icona nel drawer: l'app è solo il widget.
+- Ogni ora (WorkManager, solo con la rete) scarica `widget.png` e `widget.json` se sono cambiati, e ridisegna. Il meteo più vecchio di 3 ore non si mostra.
+- La carrellata è la foto, più larga del widget di 40dp per lato (`margine_carrellata`) e sempre in proporzione (`centerCrop`), che scorre avanti e indietro in 25 s: una `layoutAnimation` ([`res/anim/carrellata.xml`](android/app/src/main/res/anim/carrellata.xml)) che il launcher esegue da sé, perché un widget non può animare da codice.
+- Alcuni launcher, chiudendo le app recenti, fanno *force stop* e cancellano il giro orario: torna quando il launcher aggiorna il widget, o togliendo e rimettendo il widget. Aiuta mettere l'app **senza restrizioni** nelle impostazioni della batteria.
+- Log: `adb logcat -s ProjectsWallpaper`
+
+Sviluppo (JDK 17, Android SDK):
+
+```sh
+cd android
+./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Una versione nuova: alzare `versionCode`/`versionName` in [`app/build.gradle.kts`](android/app/build.gradle.kts), poi `git tag android-v0.2.0 && git push origin android-v0.2.0`. Il workflow [`android.yml`](.github/workflows/android.yml) builda l'APK firmato e lo allega a una Release. Serve una volta il keystore:
+
+```sh
+keytool -genkeypair -v -keystore android/release.jks -alias foresta -keyalg RSA -keysize 4096 -validity 36500
+gh secret set ANDROID_KEYSTORE < <(base64 -w0 android/release.jks)
+gh secret set ANDROID_KEYSTORE_PASSWORD; gh secret set ANDROID_KEY_ALIAS; gh secret set ANDROID_KEY_PASSWORD
+```
+
+Il keystore non va nel repo (`.gitignore`): tenerne una copia, senza non si possono più aggiornare le installazioni. In locale la release si firma con `android/keystore.properties` (stesse chiavi dei secrets, `ANDROID_KEYSTORE_FILE=release.jks`).
+
 ## Pipeline
 
 Configurazione una tantum del repo:
@@ -79,7 +107,7 @@ Il risultato è in `uscita/` (non versionata).
 
 ## Prossimi passi
 
-- Android: app con `WorkManager` ogni ora che imposta lo sfondo, più un widget; nella pipeline un formato `telefono` verticale.
+- Android: anche lo sfondo del telefono, con un formato `telefono` verticale nella pipeline.
 
 ## Licenza
 

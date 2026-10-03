@@ -1,0 +1,57 @@
+# Builda l'APK del widget Android, lo firma e lo allega a una GitHub Release.
+# Parte con un tag android-v* (git tag android-v0.1.0 && git push origin android-v0.1.0)
+# o a mano da Actions (allora la release prende il nome della versione in app/build.gradle.kts).
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE           il keystore in base64 (base64 -w0 release.jks)
+#   ANDROID_KEYSTORE_PASSWORD  ANDROID_KEY_ALIAS  ANDROID_KEY_PASSWORD
+
+name: Android
+
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Keystore
+        run: echo "$ANDROID_KEYSTORE" | base64 -d > release.jks
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - name: Build
+        run: ./gradlew assembleRelease --console=plain
+        env:
+          ANDROID_KEYSTORE_FILE: release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Senza firma Gradle produce app-release-unsigned.apk: meglio fermarsi che pubblicarlo.
+      - name: Release
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          test -f "$apk" || { echo "APK non firmato: controlla i secrets"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="android-v$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)"
+          fi
+          cp "$apk" "foresta-${tag#android-}.apk"
+          gh release create "$tag" "foresta-${tag#android-}.apk" --title "Android ${tag#android-}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

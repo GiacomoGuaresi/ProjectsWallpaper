@@ -15,3 +15,12 @@ uscita/
 
 # Screenshot e registro quando la foto non riesce
 diagnosi/
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore

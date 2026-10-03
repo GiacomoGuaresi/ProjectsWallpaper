@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Un abete come quelli della Foresta. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#6B4A2E" android:pathData="M50,70h8v12h-8z" />
+    <path android:fillColor="@color/bosco" android:pathData="M54,28L34,56h10L32,72h44L64,56h10z" />
+    <path android:fillColor="#5A9E66" android:pathData="M54,28L44,42h20z" />
+</vector>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Anteprima nella scelta dei widget (Android 12+). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/sfondo_widget"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/widget_descrizione"
+        android:scaleType="centerCrop"
+        android:src="@drawable/anteprima" />
+</FrameLayout>

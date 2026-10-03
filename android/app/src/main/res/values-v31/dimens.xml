@@ -1,0 +1,4 @@
+<resources>
+    <!-- Da Android 12 gli angoli seguono quelli del launcher. -->
+    <dimen name="raggio_widget">@android:dimen/system_app_widget_background_radius</dimen>
+</resources>
