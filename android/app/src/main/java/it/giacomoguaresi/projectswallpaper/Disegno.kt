@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
+import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
@@ -21,8 +24,8 @@ import kotlin.math.roundToInt
 
 /**
  * Disegna un widget: la foto e il pannello coi dati. La carrellata non passa da
- * qui: è un'animazione del layout (res/anim/carrellata.xml) che fa scorrere la
- * foto, e la esegue il launcher.
+ * qui: sono animazioni del layout (res/anim/carrellata_*.xml) che fanno vagare la
+ * foto, e le esegue il launcher.
  */
 object Disegno {
     private const val FORESTA = "https://giacomoguaresi.github.io/Projects/#/foresta"
@@ -30,6 +33,16 @@ object Disegno {
     /** Quando il launcher non dice quanto è grande il widget: 4×3 celle, più o meno. */
     private const val LARGHEZZA_DP = 320
     private const val ALTEZZA_DP = 240
+
+    /**
+     * Quanto si stringe l'inquadratura: della foto si tiene il centro, largo e
+     * alto 1/RITAGLIO. Tagliato qui e non con lo zoom dell'animazione, che
+     * vorrebbe una bitmap oltre il limite di memoria dei RemoteViews.
+     */
+    private const val RITAGLIO = 2
+
+    /** Lo zoom più forte della carrellata (res/anim/carrellata_zoom.xml): la foto deve restare nitida. */
+    private const val ZOOM_MASSIMO = 1.28f
 
     /** Da questa misura in su (dp) stagione e card; sotto, solo ora e data. */
     private const val GRANDE_DP = 200
@@ -72,8 +85,9 @@ object Disegno {
     }
 
     /**
-     * La foto ridotta quanto basta a coprire il widget più il margine in cui
-     * scorre, con le sue proporzioni: il taglio lo fa l'ImageView (centerCrop).
+     * Il centro della foto (RITAGLIO), ridotto quanto basta a coprire il widget
+     * allo zoom più forte della carrellata, con le sue proporzioni: il resto del
+     * taglio lo fa l'ImageView (centerCrop).
      * Più grande del necessario peserebbe sul limite di memoria dei RemoteViews.
      */
     private fun foto(context: Context, opzioni: Bundle): Bitmap? {
@@ -83,18 +97,27 @@ object Disegno {
         if (misure.outWidth <= 0) return null
 
         // In verticale il widget è largo MIN_WIDTH e alto MAX_HEIGHT.
-        val risorse = context.resources
-        val densita = risorse.displayMetrics.density
+        val densita = context.resources.displayMetrics.density
         val larghezzaDp = opzioni.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: LARGHEZZA_DP
         val altezzaDp = opzioni.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: ALTEZZA_DP
-        val larghezza = larghezzaDp * densita + 2 * risorse.getDimension(R.dimen.margine_carrellata)
-        val altezza = altezzaDp * densita
+        val larghezza = larghezzaDp * densita * ZOOM_MASSIMO
+        val altezza = altezzaDp * densita * ZOOM_MASSIMO
 
-        val scala = max(larghezza / misure.outWidth, altezza / misure.outHeight)
+        val regione = Rect(0, 0, misure.outWidth / RITAGLIO, misure.outHeight / RITAGLIO).apply {
+            offset((misure.outWidth - width()) / 2, (misure.outHeight - height()) / 2)
+        }
+        val scala = max(larghezza / regione.width(), altezza / regione.height())
         var campione = 1
-        while (misure.outWidth * scala * campione * 2 <= misure.outWidth) campione *= 2
-        val foto = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = campione })
-            ?: return null
+        while (scala * campione * 2 <= 1f) campione *= 2
+        val decoder = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) BitmapRegionDecoder.newInstance(file.path)
+            else @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(file.path, false)
+        }.getOrNull() ?: return null
+        val foto = try {
+            decoder.decodeRegion(regione, BitmapFactory.Options().apply { inSampleSize = campione })
+        } finally {
+            decoder.recycle()
+        } ?: return null
         val finale = scala * campione
         if (finale >= 1f) return foto
         return foto.scale((foto.width * finale).roundToInt(), (foto.height * finale).roundToInt())

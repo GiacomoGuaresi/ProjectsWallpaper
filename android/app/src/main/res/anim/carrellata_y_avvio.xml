@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Un widget non può avviare animazioni da codice: la parte la layoutAnimation, al primo disegno. -->
+<layoutAnimation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:animation="@anim/carrellata_y"
+    android:delay="0" />

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lo zoom che respira, attorno al centro, da 1.2 a 1.28: sotto 1.2 la foto non
+  sborderebbe abbastanza per le carrellate. Disegno.ZOOM_MASSIMO è il 1.28.
+-->
+<scale xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="53000"
+    android:fromXScale="1.2"
+    android:fromYScale="1.2"
+    android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+    android:pivotX="50%"
+    android:pivotY="50%"
+    android:repeatCount="infinite"
+    android:repeatMode="reverse"
+    android:toXScale="1.28"
+    android:toYScale="1.28" />

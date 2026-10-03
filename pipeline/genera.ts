@@ -31,10 +31,11 @@ const FORMATI = {
   /** Mac 16:10, Retina: 2560×1600. In basso a sinistra: lontano da menu, icone, Dock e barra di Windows. */
   desktop: { larga: 1280, alta: 800, densita: 2, parametri: 'pannelli=oggi,numeri&posizione=basso-sinistra' },
   /**
-   * Widget Android 4:3, 1600×1200. Solo la scena: il widget la ingrandisce e ci
-   * scorre sopra, e il pannello lo disegna lui da `widget.json`.
+   * Widget Android 4:3, 2400×1800. Solo la scena: il widget ne tiene il centro,
+   * lo ingrandisce e ci scorre sopra (densità 3 perché resti nitido), e il
+   * pannello lo disegna lui da `widget.json`.
    */
-  widget: { larga: 800, alta: 600, densita: 2, parametri: '' },
+  widget: { larga: 800, alta: 600, densita: 3, parametri: '' },
 } satisfies Record<string, { larga: number; alta: number; densita: number; parametri: string }>
 
 type Formato = keyof typeof FORMATI

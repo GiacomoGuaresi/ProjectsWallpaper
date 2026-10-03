@@ -1,6 +1,3 @@
 <resources>
     <dimen name="raggio_widget">16dp</dimen>
-    <!-- Quanto la foto sborda dal widget per lato: lo spazio in cui scorre. -->
-    <dimen name="margine_carrellata">40dp</dimen>
-    <dimen name="margine_carrellata_negativo">-40dp</dimen>
 </resources>

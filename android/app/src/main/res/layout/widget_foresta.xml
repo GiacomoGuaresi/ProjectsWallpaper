@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Sotto, finché la foto non c'è, il cielo e una riga d'attesa. Poi la
-  carrellata: la foto, più larga del widget, che scorre piano avanti e
-  indietro (res/anim/carrellata.xml), sempre in centerCrop: le proporzioni
-  restano quelle vere.
+  carrellata: la foto, sempre in centerCrop (le proporzioni restano quelle
+  vere) e sempre ingrandita, che vaga piano: tre livelli annidati, ognuno con
+  la sua animazione (res/anim/carrellata_*.xml), in orizzontale, in verticale
+  e uno zoom.
 
   Sopra, due versioni che Disegno.kt sceglie secondo la misura:
   - grande: in alto l'ora e la data, in basso la card con meteo, sole e luna,
@@ -31,21 +32,43 @@
         android:textColor="@color/testo_attesa"
         android:textSize="14sp" />
 
+    <!--
+      Ogni layoutAnimation muove il figlio: X il livello sotto, Y quello dopo,
+      lo zoom la foto. Tutti grandi quanto il widget: è lo zoom, mai sotto 1.2,
+      a far sbordare la foto del 10% per lato, più di quanto si sposta. Nessun
+      livello taglia i figli (clipChildren false), altrimenti un livello
+      spostato scoprirebbe il vuoto: l'unico taglio è il bordo del widget.
+    -->
     <FrameLayout
         android:id="@+id/carrellata"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layoutAnimation="@anim/carrellata_avvio"
+        android:clipChildren="false"
+        android:layoutAnimation="@anim/carrellata_x_avvio"
         android:visibility="gone">
 
-        <ImageView
-            android:id="@+id/foto"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="@dimen/margine_carrellata_negativo"
-            android:layout_marginEnd="@dimen/margine_carrellata_negativo"
-            android:contentDescription="@string/widget_descrizione"
-            android:scaleType="centerCrop" />
+            android:clipChildren="false"
+            android:layoutAnimation="@anim/carrellata_y_avvio"
+            tools:ignore="UselessParent">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:layoutAnimation="@anim/carrellata_zoom_avvio"
+                tools:ignore="UselessParent">
+
+                <ImageView
+                    android:id="@+id/foto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/widget_descrizione"
+                    android:scaleType="centerCrop" />
+            </FrameLayout>
+        </FrameLayout>
     </FrameLayout>
 
     <!-- L'ora sul cielo, con l'ombra per leggerla anche di giorno; nel piccolo la data più piccola. -->

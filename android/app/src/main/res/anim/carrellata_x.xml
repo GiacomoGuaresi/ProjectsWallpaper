@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  La carrellata in orizzontale. Con quella in verticale (carrellata_y.xml) e lo
+  zoom (carrellata_zoom.xml) ha durate che non stanno in rapporto semplice: la
+  foto vaga per tutta l'immagine e il giro si ripete solo dopo decine di minuti.
+  ±7% della larghezza del widget: lo zoom, mai sotto 1.2, fa sbordare la
+  foto del 10% per lato.
+-->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="29000"
+    android:fromXDelta="-7%"
+    android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+    android:repeatCount="infinite"
+    android:repeatMode="reverse"
+    android:toXDelta="7%" />
