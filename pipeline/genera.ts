@@ -30,11 +30,17 @@ const MARGINE = 1500
 const FORMATI = {
   /** Mac 16:10, Retina: 2560×1600. In basso a sinistra: lontano da menu, icone, Dock e barra di Windows. */
   desktop: { larga: 1280, alta: 800, densita: 2, parametri: 'pannelli=oggi,numeri&posizione=basso-sinistra' },
+  /**
+   * Widget Android 4:3, 1600×1200. Solo la scena: il widget la ingrandisce e ci
+   * scorre sopra, e il pannello lo disegna lui da `widget.json`.
+   */
+  widget: { larga: 800, alta: 600, densita: 2, parametri: '' },
 } satisfies Record<string, { larga: number; alta: number; densita: number; parametri: string }>
 
 type Formato = keyof typeof FORMATI
 
-async function fotografa(browser: Browser, nome: Formato) {
+/** Fotografa un formato e restituisce il testo visibile della pagina (quello dell'overlay). */
+async function fotografa(browser: Browser, nome: Formato): Promise<string> {
   const { larga, alta, densita, parametri } = FORMATI[nome]
   const contesto = await browser.newContext({
     viewport: { width: larga, height: alta },
@@ -54,7 +60,7 @@ async function fotografa(browser: Browser, nome: Formato) {
   })
 
   try {
-    await pagina.goto(`${INDIRIZZO}#/foresta?sfondo&${parametri}`)
+    await pagina.goto(`${INDIRIZZO}#/foresta?sfondo${parametri ? `&${parametri}` : ''}`)
 
     // Senza sessione compare la passphrase; con la sessione, direttamente la scena.
     const passphrase = pagina.locator('input[type="password"]')
@@ -75,6 +81,7 @@ async function fotografa(browser: Browser, nome: Formato) {
     const file = new URL(`${nome}.png`, USCITA)
     await pagina.screenshot({ path: file.pathname, animations: 'disabled' })
     console.log(`${nome}: ${larga * densita}×${alta * densita} → uscita/${nome}.png`)
+    return await pagina.locator('body').innerText()
   } catch (errore) {
     await diagnosi(pagina, nome, registro)
     throw errore
@@ -110,6 +117,30 @@ async function diagnosi(pagina: Page, nome: Formato, registro: string[]) {
   }
 }
 
+/**
+ * I dati per il pannello del widget Android, letti dal testo della card del
+ * desktop (OverlaySfondo di Projects), per esempio:
+ *   "Sabato 3 ottobre · Autunno\n18°\n· sereno a Milano\n07:23\n18:59\n…
+ *    34 alberi · 14 boschetti · 3 arbusti\n34% completato…"
+ * Quello che non si trova resta fuori: il widget mostra il resto.
+ */
+function datiWidget(testo: string, generato: string) {
+  const numero = (re: RegExp) => {
+    const trovato = testo.match(re)
+    return trovato ? Number(trovato[1]) : undefined
+  }
+  const [alba, tramonto] = testo.match(/\b\d{2}:\d{2}\b/g) ?? []
+  return {
+    generato,
+    temperatura: numero(/(-?\d+)°/),
+    cielo: testo.match(/·\s*(sereno|nuvoloso|nebbia|pioggia|temporale|neve)\b/i)?.[1].toLowerCase(),
+    alba,
+    tramonto,
+    alberi: numero(/(\d+) alber[oi] ·/),
+    percentuale: numero(/(\d+)% completato/),
+  }
+}
+
 /** Una pagina minima per vedere le foto dal browser. */
 function indice(generato: string, formati: Formato[]) {
   const foto = formati.map((f) => `<figure><img src="${f}.png" alt="${f}"><figcaption>${f}.png</figcaption></figure>`)
@@ -138,8 +169,12 @@ mkdirSync(USCITA, { recursive: true })
 const browser = await chromium.launch()
 try {
   const formati = Object.keys(FORMATI) as Formato[]
-  for (const nome of formati) await fotografa(browser, nome)
+  const testi: Partial<Record<Formato, string>> = {}
+  for (const nome of formati) testi[nome] = await fotografa(browser, nome)
   const generato = new Date().toISOString()
+  const dati = datiWidget(testi.desktop ?? '', generato)
+  console.log('widget.json:', JSON.stringify(dati))
+  writeFileSync(new URL('widget.json', USCITA), JSON.stringify(dati, null, 2) + '\n')
   writeFileSync(new URL('info.json', USCITA), JSON.stringify({ generato, formati }, null, 2) + '\n')
   writeFileSync(new URL('index.html', USCITA), indice(generato, formati))
 } finally {

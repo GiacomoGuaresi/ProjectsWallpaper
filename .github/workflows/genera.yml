@@ -14,6 +14,8 @@ on:
     - cron: '7 * * * *'
   push:
     branches: [main]
+    # L'app Android non cambia le foto.
+    paths-ignore: ['android/**', '.github/workflows/android.yml']
   workflow_dispatch:
 
 permissions:
