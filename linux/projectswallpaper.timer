@@ -1,0 +1,13 @@
+# Ogni ora, e un minuto dopo l'accesso. Persistent: se il PC era spento o in
+# sospensione allo scoccare dell'ora, il giro perso parte appena possibile.
+[Unit]
+Description=La Foresta di Projects come sfondo, ogni ora
+
+[Timer]
+OnCalendar=hourly
+OnStartupSec=1min
+Persistent=true
+RandomizedDelaySec=2min
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+# Un giro di aggiornamento dello sfondo; lo lancia projectswallpaper.timer.
+[Unit]
+Description=La Foresta di Projects come sfondo
+After=graphical-session.target network-online.target
+
+[Service]
+Type=oneshot
+# Il desktop e il display, salvati da installa.sh: i servizi utente non sempre li ricevono.
+EnvironmentFile=-%h/.config/projectswallpaper/config.env
+ExecStart=/bin/bash %h/.local/share/projectswallpaper/aggiorna-sfondo.sh
+TimeoutStartSec=2min

@@ -30,12 +30,13 @@ if [ ! -s "$SCARICATA" ]; then
   exit 0
 fi
 
-mv "$SCARICATA" "$ULTIMA"
 NUOVA="$CARTELLA/foresta-$(date +%s).png"
-cp -p "$ULTIMA" "$NUOVA"
+cp -p "$SCARICATA" "$NUOVA"
 
 osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$NUOVA\""
 
+# Solo ora la foto conta come "già vista": se qualcosa sopra fallisce, il giro dopo riprova.
+mv "$SCARICATA" "$ULTIMA"
 # Le foto vecchie non servono più: lo sfondo ora punta alla nuova.
 find "$CARTELLA" -name 'foresta-*.png' ! -path "$NUOVA" -delete
 log "sfondo aggiornato: $(basename "$NUOVA")"

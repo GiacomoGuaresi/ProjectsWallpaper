@@ -5,12 +5,13 @@ La **Foresta** di [Projects](https://github.com/GiacomoGuaresi/Projects) come sf
 ```
 GitHub Actions (ogni ora)                GitHub Pages                     dispositivi
 Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (launchd, ogni ora)
-entra con la passphrase, fotografa                                         Windows, Linux, Android: dopo
+entra con la passphrase, fotografa                                         Windows (Utilità di pianificazione)
+                                                                           Linux (timer systemd utente)
 ```
 
 - **Pipeline** ([`pipeline/genera.ts`](pipeline/genera.ts), [`genera.yml`](.github/workflows/genera.yml)): Chromium headless apre la [modalità sfondo](https://github.com/GiacomoGuaresi/Projects/blob/main/doc/08-interfaccia.md) di Projects, cioè solo la scena senza interfaccia, con l'ora di Roma e "riduci movimento". Aspetta che dati e meteo siano arrivati e salva una PNG per formato. Se qualcosa va storto il deploy non parte, e restano le foto dell'ora prima.
 - **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600) e `info.json` (quando è stata generata). Sono pubbliche: mostrano solo alberi e colori, niente titoli.
-- **Mac** ([`mac/`](mac/)): uno script che scarica la PNG solo se è cambiata e la mette come sfondo su tutte le scrivanie, lanciato da un LaunchAgent ogni ora e all'accesso.
+- **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato ogni ora e all'accesso dal pianificatore del sistema. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
 
 ## Mac
 
@@ -23,6 +24,36 @@ entra con la passphrase, fotografa                                         Windo
 - Aggiornare subito: `launchctl kickstart gui/$UID/it.giacomoguaresi.projectswallpaper`
 - Log: `~/Library/Logs/ProjectsWallpaper.log` · Stato: `launchctl print gui/$UID/it.giacomoguaresi.projectswallpaper`
 - File: `~/Library/Application Support/ProjectsWallpaper/`
+
+## Windows
+
+Testato solo sulla carta. Richiede Windows 10 21H2+ o 11 (per `conhost --headless`) e usa Windows PowerShell 5.1, già presente.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File windows\installa.ps1      # installa e fa subito un giro
+powershell -ExecutionPolicy Bypass -File windows\disinstalla.ps1   # toglie tutto
+```
+
+- Attività **ProjectsWallpaper** nell'Utilità di pianificazione: all'accesso e poi ogni ora, solo con l'utente collegato.
+- Aggiornare subito: `Start-ScheduledTask -TaskName ProjectsWallpaper`
+- Registro e foto: `%LOCALAPPDATA%\ProjectsWallpaper\` (`registro.log`)
+- Adattamento *Riempi*: su uno schermo 16:9 la foto 16:10 perde un filo sopra e sotto, dove c'è solo cielo.
+
+## Linux
+
+Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché salva il desktop in uso:
+
+```sh
+./linux/installa.sh      # installa e fa subito un giro
+./linux/disinstalla.sh   # toglie tutto
+```
+
+- Desktop supportati: GNOME (Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE e sway. Su altri window manager X11 serve `feh`.
+- Timer systemd **utente** `projectswallpaper.timer`: ogni ora, un minuto dopo l'accesso, con recupero dei giri persi.
+- Aggiornare subito: `systemctl --user start projectswallpaper.service`
+- Log: `journalctl --user -u projectswallpaper` · Prossimi giri: `systemctl --user list-timers`
+- File: `~/.local/share/projectswallpaper/` (foto), `~/.config/projectswallpaper/config.env` (desktop e display salvati). Se cambi desktop, rilancia `installa.sh`.
+- Su sway lo sfondo vale fino al riavvio di sway. Per tenerlo, aggiungi alla config: `output * bg ~/.local/share/projectswallpaper/ultima.png fill`.
 
 ## Pipeline
 
@@ -47,7 +78,6 @@ Il risultato è in `uscita/` (non versionata).
 
 ## Prossimi passi
 
-- Windows e Linux: stesso schema del Mac (script più operazione pianificata o timer systemd).
 - Android: app con `WorkManager` ogni ora che imposta lo sfondo, più un widget; nella pipeline un formato `telefono` verticale.
 
 ## Licenza
