@@ -39,6 +39,9 @@ jobs:
       - run: npm ci
       - name: Installa Chromium
         run: npx playwright install --with-deps chromium
+      # Il testo dell'overlay è in Avenir, che su Linux non c'è: Inter al suo posto, non DejaVu.
+      - name: Installa il font Inter
+        run: sudo apt-get install -y --no-install-recommends fonts-inter
       - name: Fotografa la Foresta
         run: npm run genera
         env:

@@ -22,16 +22,20 @@ const ATTESA_MASSIMA = 60_000
 /** Dopo il "pronto", un attimo perché font e filtri SVG finiscano di disegnarsi. */
 const MARGINE = 1500
 
-/** I formati: la vista CSS per la densità dà i pixel della PNG. */
+/**
+ * I formati: la vista CSS per la densità dà i pixel della PNG. `parametri` si
+ * aggiungono a `#/foresta?sfondo`: quali pannelli dell'overlay e dove
+ * (doc/08 di Projects, "Modalità sfondo").
+ */
 const FORMATI = {
-  /** Mac 16:10, Retina: 2560×1600. */
-  desktop: { larga: 1280, alta: 800, densita: 2 },
-} satisfies Record<string, { larga: number; alta: number; densita: number }>
+  /** Mac 16:10, Retina: 2560×1600. In basso a sinistra: lontano da menu, icone, Dock e barra di Windows. */
+  desktop: { larga: 1280, alta: 800, densita: 2, parametri: 'pannelli=oggi,numeri&posizione=basso-sinistra' },
+} satisfies Record<string, { larga: number; alta: number; densita: number; parametri: string }>
 
 type Formato = keyof typeof FORMATI
 
 async function fotografa(browser: Browser, nome: Formato) {
-  const { larga, alta, densita } = FORMATI[nome]
+  const { larga, alta, densita, parametri } = FORMATI[nome]
   const contesto = await browser.newContext({
     viewport: { width: larga, height: alta },
     deviceScaleFactor: densita,
@@ -50,7 +54,7 @@ async function fotografa(browser: Browser, nome: Formato) {
   })
 
   try {
-    await pagina.goto(`${INDIRIZZO}#/foresta?sfondo`)
+    await pagina.goto(`${INDIRIZZO}#/foresta?sfondo&${parametri}`)
 
     // Senza sessione compare la passphrase; con la sessione, direttamente la scena.
     const passphrase = pagina.locator('input[type="password"]')

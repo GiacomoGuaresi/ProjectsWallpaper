@@ -10,7 +10,8 @@ entra con la passphrase, fotografa                                         Windo
 ```
 
 - **Pipeline** ([`pipeline/genera.ts`](pipeline/genera.ts), [`genera.yml`](.github/workflows/genera.yml)): Chromium headless apre la [modalità sfondo](https://github.com/GiacomoGuaresi/Projects/blob/main/doc/08-interfaccia.md) di Projects, cioè solo la scena senza interfaccia, con l'ora di Roma e "riduci movimento". Aspetta che dati e meteo siano arrivati e salva una PNG per formato. Se qualcosa va storto il deploy non parte, e restano le foto dell'ora prima.
-- **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600) e `info.json` (quando è stata generata). Sono pubbliche: mostrano solo alberi e colori, niente titoli.
+- **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600) e `info.json` (quando è stata generata). Sono pubbliche, quindi niente titoli né nomi di progetti.
+- **Overlay**: in basso a sinistra una card con data, meteo e temperatura a Milano, alba, tramonto e luna, e i numeri della foresta (alberi, boschetti, arbusti, avanzamento, alberi piantati in settimana). Pannelli e posizione si scelgono per formato con `parametri` in `FORMATI` ([`genera.ts`](pipeline/genera.ts)), ad esempio `pannelli=oggi,numeri&posizione=basso-sinistra`. Tutte le opzioni sono nella doc di Projects, "Modalità sfondo".
 - **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato ogni ora e all'accesso dal pianificatore del sistema. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
 
 ## Mac
