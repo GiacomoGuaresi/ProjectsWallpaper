@@ -14,6 +14,7 @@ entra con la passphrase, fotografa                                         Windo
 - **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600), `widget.png` (1600×1200, solo la scena), `widget.json` (stagione, meteo, alba e tramonto, luna, alberi, boschetti, arbusti, avanzamento e alberi della settimana, letti dalla card del desktop) e `info.json` (quando sono state generate). Sono pubbliche, quindi niente titoli né nomi di progetti.
 - **Overlay**: in basso a sinistra una card con data, meteo e temperatura a Milano, alba, tramonto e luna, e i numeri della foresta (alberi, boschetti, arbusti, avanzamento, alberi piantati in settimana). Pannelli e posizione si scelgono per formato con `parametri` in `FORMATI` ([`genera.ts`](pipeline/genera.ts)), ad esempio `pannelli=oggi,numeri&posizione=basso-sinistra`. Tutte le opzioni sono nella doc di Projects, "Modalità sfondo".
 - **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato ogni ora e all'accesso dal pianificatore del sistema. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
+- **Comando** `projectswallpaper`, installato insieme al resto: fa partire subito il giro pianificato e ne mostra l'esito. `projectswallpaper forza` riscarica e rimette la foto anche se non è cambiata, `projectswallpaper log` mostra le ultime righe del log.
 
 ## Mac
 
@@ -23,7 +24,7 @@ entra con la passphrase, fotografa                                         Windo
 ```
 
 - La prima volta macOS chiede di consentire a `bash` (o al Terminale) di controllare **System Events**: serve per cambiare lo sfondo.
-- Aggiornare subito: `launchctl kickstart gui/$UID/it.giacomoguaresi.projectswallpaper`
+- Aggiornare subito: `projectswallpaper` (o `launchctl kickstart gui/$UID/it.giacomoguaresi.projectswallpaper`). Il comando sta in `~/.local/bin`, che va aggiunto al `PATH` se non c'è già.
 - Log: `~/Library/Logs/ProjectsWallpaper.log` · Stato: `launchctl print gui/$UID/it.giacomoguaresi.projectswallpaper`
 - File: `~/Library/Application Support/ProjectsWallpaper/`
 
@@ -37,7 +38,7 @@ powershell -ExecutionPolicy Bypass -File windows\disinstalla.ps1   # toglie tutt
 ```
 
 - Attività **ProjectsWallpaper** nell'Utilità di pianificazione: all'accesso e poi ogni ora, solo con l'utente collegato.
-- Aggiornare subito: `Start-ScheduledTask -TaskName ProjectsWallpaper`
+- Aggiornare subito: `projectswallpaper` (o `Start-ScheduledTask -TaskName ProjectsWallpaper`). Il comando è `projectswallpaper.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`, già nel `PATH`.
 - Registro e foto: `%LOCALAPPDATA%\ProjectsWallpaper\` (`registro.log`)
 - Adattamento *Riempi*: su uno schermo 16:9 la foto 16:10 perde un filo sopra e sotto, dove c'è solo cielo.
 
@@ -52,7 +53,7 @@ Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché sa
 
 - Desktop supportati: GNOME (Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE e sway. Su altri window manager X11 serve `feh`.
 - Timer systemd **utente** `projectswallpaper.timer`: ogni ora, un minuto dopo l'accesso, con recupero dei giri persi.
-- Aggiornare subito: `systemctl --user start projectswallpaper.service`
+- Aggiornare subito: `projectswallpaper` (o `systemctl --user start projectswallpaper.service`). Il comando sta in `~/.local/bin`.
 - Log: `journalctl --user -u projectswallpaper` · Prossimi giri: `systemctl --user list-timers`
 - File: `~/.local/share/projectswallpaper/` (foto), `~/.config/projectswallpaper/config.env` (desktop e display salvati). Se cambi desktop, rilancia `installa.sh`.
 - Su sway lo sfondo vale fino al riavvio di sway. Per tenerlo, aggiungi alla config: `output * bg ~/.local/share/projectswallpaper/ultima.png fill`.

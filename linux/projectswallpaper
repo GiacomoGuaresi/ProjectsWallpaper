@@ -1,0 +1,29 @@
+#!/bin/bash
+# Aggiorna lo sfondo adesso, senza aspettare il giro orario. Lo installa
+# installa.sh in ~/.local/bin. Fa partire il servizio systemd, così il giro è
+# quello di sempre, con il desktop salvato in config.env e il log nel journal.
+#
+#   projectswallpaper          scarica la foto se è cambiata e la mette come sfondo
+#   projectswallpaper forza    la riscarica e la rimette anche se non è cambiata
+#   projectswallpaper log      le ultime righe del log
+
+set -euo pipefail
+
+ULTIMA="$HOME/.local/share/projectswallpaper/ultima.png"
+
+case "${1:-aggiorna}" in
+  aggiorna) ;;
+  forza)
+    # Con una data vecchissima il server non può rispondere "non modificata".
+    [ -f "$ULTIMA" ] && touch -d @0 "$ULTIMA"
+    ;;
+  log) journalctl --user -u projectswallpaper -n 20 --no-pager; exit ;;
+  *) echo "uso: projectswallpaper [aggiorna|forza|log]" >&2; exit 2 ;;
+esac
+
+inizio=$(date +%s)
+# Il servizio è oneshot: start aspetta la fine del giro.
+esito=0
+systemctl --user start projectswallpaper.service || esito=$?
+journalctl --user -u projectswallpaper --since "@$inizio" -o cat --no-pager | grep -v -e '^Start' -e '^Finished' -e 'Consumed' || true
+exit "$esito"

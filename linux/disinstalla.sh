@@ -10,7 +10,7 @@ UNITA="$HOME/.config/systemd/user"
 systemctl --user disable --now projectswallpaper.timer 2>/dev/null || true
 rm -f "$UNITA/projectswallpaper.service" "$UNITA/projectswallpaper.timer"
 systemctl --user daemon-reload
-rm -f "$DATI/aggiorna-sfondo.sh"
+rm -f "$DATI/aggiorna-sfondo.sh" "$HOME/.local/bin/projectswallpaper"
 rm -rf "$HOME/.config/projectswallpaper"
 
 echo "Disinstallato. Per togliere anche le foto: rm -r $DATI"

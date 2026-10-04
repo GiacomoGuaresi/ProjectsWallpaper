@@ -1,6 +1,7 @@
 ﻿# Installa l'aggiornamento orario dello sfondo: copia lo script e registra
-# l'attività "ProjectsWallpaper" (all'accesso e poi ogni ora), poi fa subito
-# un primo giro. Rilanciabile, anche per aggiornare.
+# l'attività "ProjectsWallpaper" (all'accesso e poi ogni ora), installa il
+# comando projectswallpaper, poi fa subito un primo giro. Rilanciabile, anche
+# per aggiornare.
 #
 # Uso, da PowerShell nella cartella del repo:
 #   powershell -ExecutionPolicy Bypass -File windows\installa.ps1
@@ -13,6 +14,11 @@ $Script = Join-Path $Cartella 'aggiorna-sfondo.ps1'
 
 New-Item -ItemType Directory -Force -Path $Cartella | Out-Null
 Copy-Item -Force (Join-Path $PSScriptRoot 'aggiorna-sfondo.ps1') $Script
+
+# Il comando per aggiornare a mano: projectswallpaper [aggiorna|forza|log]. Il .cmd
+# va in WindowsApps, che Windows 10 e 11 hanno già nel PATH dell'utente.
+Copy-Item -Force (Join-Path $PSScriptRoot 'projectswallpaper.ps1') $Cartella
+Copy-Item -Force (Join-Path $PSScriptRoot 'projectswallpaper.cmd') (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps')
 
 # conhost --headless: PowerShell gira senza aprire nemmeno per un attimo una finestra.
 $Azione = New-ScheduledTaskAction -Execute 'conhost.exe' `
@@ -32,4 +38,4 @@ Register-ScheduledTask -TaskName $Nome -Action $Azione -Trigger $Inneschi -Setti
 Start-ScheduledTask -TaskName $Nome
 
 Write-Host "Installato. Primo giro in corso; il registro è in $Cartella\registro.log"
-Write-Host "Aggiornare a mano: Start-ScheduledTask -TaskName $Nome"
+Write-Host "Aggiornare a mano: projectswallpaper (o projectswallpaper forza)"

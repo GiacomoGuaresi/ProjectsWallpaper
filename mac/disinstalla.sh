@@ -9,5 +9,6 @@ ETICHETTA="it.giacomoguaresi.projectswallpaper"
 launchctl bootout "gui/$UID/$ETICHETTA" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/$ETICHETTA.plist"
 rm -f "$HOME/Library/Application Support/ProjectsWallpaper/aggiorna-sfondo.sh"
+rm -f "$HOME/.local/bin/projectswallpaper"
 
 echo "Disinstallato. Per togliere anche le foto: rm -r ~/Library/Application\\ Support/ProjectsWallpaper"
