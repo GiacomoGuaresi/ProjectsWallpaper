@@ -21,6 +21,9 @@ const DIAGNOSI = new URL('../diagnosi/', import.meta.url)
 const ATTESA_MASSIMA = 60_000
 /** Dopo il "pronto", un attimo perché font e filtri SVG finiscano di disegnarsi. */
 const MARGINE = 1500
+/** Quante volte premere Riprova se le attività non si caricano, e quanto aspettare prima. */
+const TENTATIVI = 3
+const ATTESA_RIPROVA = 5000
 
 /**
  * I formati: la vista CSS per la densità dà i pixel della PNG. `parametri` si
@@ -72,8 +75,20 @@ async function fotografa(browser: Browser, nome: Formato): Promise<string> {
       await passphrase.press('Enter')
       // Passphrase sbagliata o rete giù: la schermata d'accesso lo dice in un role="alert".
       const avviso = pagina.locator('[role="alert"]')
-      await avviso.or(pronto).first().waitFor({ state: 'attached', timeout: ATTESA_MASSIMA })
-      if (await avviso.isVisible()) throw new Error(`Accesso non riuscito: ${await avviso.innerText()}`)
+      const riprova = avviso.getByRole('button', { name: 'Riprova' })
+      for (let tentativo = 1; ; tentativo++) {
+        await avviso.or(pronto).first().waitFor({ state: 'attached', timeout: ATTESA_MASSIMA })
+        if (!(await avviso.isVisible())) break
+        // Subito dopo il login Supabase può rifiutare il token appena emesso ("JWT issued at
+        // future": gli orologi di Auth e PostgREST sfasati di qualche secondo). Passa da sé:
+        // si aspetta e si preme Riprova. Una passphrase sbagliata non ha Riprova.
+        if (tentativo > TENTATIVI || !(await riprova.isVisible())) {
+          throw new Error(`Accesso non riuscito: ${await avviso.innerText()}`)
+        }
+        console.warn(`${nome}: ${(await avviso.innerText()).split('\n')[0]}, riprovo (${tentativo}/${TENTATIVI})`)
+        await pagina.waitForTimeout(ATTESA_RIPROVA)
+        await riprova.click()
+      }
     }
 
     await pronto.waitFor({ state: 'attached', timeout: ATTESA_MASSIMA })
