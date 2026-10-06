@@ -11,7 +11,6 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.scale
-import androidx.core.net.toUri
 import org.json.JSONObject
 import java.time.Duration
 import java.time.Instant
@@ -25,8 +24,6 @@ import kotlin.math.roundToInt
  * foto, e le esegue il launcher.
  */
 object Disegno {
-    private const val FORESTA = "https://giacomoguaresi.github.io/Projects/#/foresta"
-
     /** Quando il launcher non dice quanto è grande il widget: 4×3 celle, più o meno. */
     private const val LARGHEZZA_DP = 320
     private const val ALTEZZA_DP = 240
@@ -70,7 +67,7 @@ object Disegno {
             viste.setViewVisibility(R.id.attesa, View.GONE)
         }
         pannello(context, viste, grande(opzioni))
-        viste.setOnClickPendingIntent(android.R.id.background, apriForesta(context))
+        viste.setOnClickPendingIntent(android.R.id.background, aggiorna(context))
         manager.updateAppWidget(id, viste)
     }
 
@@ -188,10 +185,11 @@ object Disegno {
 
     private fun JSONObject.optStringOrNull(nome: String): String? = optString(nome).takeIf { has(nome) && !isNull(nome) && it.isNotEmpty() }
 
-    private fun apriForesta(context: Context): PendingIntent = PendingIntent.getActivity(
+    /** Il tocco sul widget: rigenera la foto (WidgetForesta.onReceive). */
+    private fun aggiorna(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context,
         0,
-        Intent(Intent.ACTION_VIEW, FORESTA.toUri()),
+        Intent(context, WidgetForesta::class.java).setAction(WidgetForesta.AGGIORNA),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 }

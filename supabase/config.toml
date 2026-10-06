@@ -1,0 +1,6 @@
+# Solo per il deploy della funzione: il progetto Supabase è quello di Projects.
+#   supabase functions deploy foresta-aggiorna --project-ref <ref>
+
+[functions.foresta-aggiorna]
+# Pubblica: la chiamano pg_cron, gli script dei PC e il widget, senza chiavi.
+verify_jwt = false

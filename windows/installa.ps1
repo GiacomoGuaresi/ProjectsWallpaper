@@ -1,5 +1,6 @@
 ﻿# Installa l'aggiornamento orario dello sfondo: copia lo script e registra
-# l'attività "ProjectsWallpaper" (all'accesso e poi ogni ora), installa il
+# l'attività "ProjectsWallpaper" (all'accesso e poi ogni ora al minuto 12, dopo
+# la pipeline che parte al minuto 7), installa il
 # comando projectswallpaper, poi fa subito un primo giro. Rilanciabile, anche
 # per aggiornare.
 #
@@ -25,7 +26,7 @@ $Azione = New-ScheduledTaskAction -Execute 'conhost.exe' `
   -Argument "--headless powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Script`""
 $Inneschi = @(
   (New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"),
-  (New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1))
+  (New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddHours((Get-Date).Hour).AddMinutes(12) -RepetitionInterval (New-TimeSpan -Hours 1))
 )
 # StartWhenAvailable: se il PC era spento o in sospensione, il giro perso parte appena può.
 $Impostazioni = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries `

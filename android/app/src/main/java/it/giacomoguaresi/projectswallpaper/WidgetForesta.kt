@@ -4,11 +4,14 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 
 /**
  * Il widget con la foto della Foresta. Il sistema non lo aggiorna da sé
- * (updatePeriodMillis=0): ci pensa AggiornaForesta, ogni ora.
+ * (updatePeriodMillis=0): ci pensa AggiornaForesta, ogni ora. Toccandolo si
+ * rigenera la foto subito (AGGIORNA, il PendingIntent lo mette Disegno).
  *
  * Il lavoro periodico resta in coda finché c'è un widget: così WorkManager non
  * spegne e riaccende i suoi receiver, cosa che farebbe richiamare onUpdate a
@@ -36,7 +39,18 @@ class WidgetForesta : AppWidgetProvider() {
         AggiornaForesta.ferma(context)
     }
 
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == AGGIORNA) {
+            Toast.makeText(context, R.string.widget_aggiorno, Toast.LENGTH_SHORT).show()
+            AggiornaForesta.aMano(context)
+        } else {
+            super.onReceive(context, intent)
+        }
+    }
+
     companion object {
+        const val AGGIORNA = "it.giacomoguaresi.projectswallpaper.AGGIORNA"
+
         fun ridisegnaTutti(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             manager.getAppWidgetIds(ComponentName(context, WidgetForesta::class.java))

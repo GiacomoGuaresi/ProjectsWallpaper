@@ -11,18 +11,31 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
  * Scarica foto e dati e, se qualcosa è nuovo, ridisegna i widget. Gira ogni ora finché c'è
- * almeno un widget, e una volta subito quando se ne aggiunge uno.
+ * almeno un widget, una volta subito quando se ne aggiunge uno, e quando si tocca il widget:
+ * allora prima fa rigenerare la foto alla pipeline e aspetta che sia pubblicata.
  */
 class AggiornaForesta(context: Context, parametri: WorkerParameters) : CoroutineWorker(context, parametri) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Solo al primo tentativo: se poi è il download a non riuscire, la foto nuova c'è già.
+        if (inputData.getBoolean(RIGENERA, false) && runAttemptCount == 0) {
+            try {
+                Pipeline.rigenera()
+            } catch (e: IOException) {
+                Log.w(Foto.TAG, "pipeline non avviata: ${e.message}")
+            } catch (e: JSONException) {
+                Log.w(Foto.TAG, "pipeline: risposta inattesa: ${e.message}")
+            }
+        }
         var nuovi = false
         var errore = false
         for (foto in Foto.entries) {
@@ -46,6 +59,8 @@ class AggiornaForesta(context: Context, parametri: WorkerParameters) : Coroutine
     companion object {
         private const val PERIODICO = "foresta-periodico"
         private const val SUBITO = "foresta-subito"
+        private const val A_MANO = "foresta-a-mano"
+        private const val RIGENERA = "rigenera"
 
         private val conRete = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
@@ -66,10 +81,20 @@ class AggiornaForesta(context: Context, parametri: WorkerParameters) : Coroutine
             WorkManager.getInstance(context).enqueueUniqueWork(SUBITO, ExistingWorkPolicy.KEEP, richiesta)
         }
 
+        /** Dal tocco sul widget: foto rigenerata adesso. Toccarlo di nuovo mentre aspetta non ne accoda un altro. */
+        fun aMano(context: Context) {
+            val richiesta = OneTimeWorkRequestBuilder<AggiornaForesta>()
+                .setConstraints(conRete)
+                .setInputData(workDataOf(RIGENERA to true))
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(A_MANO, ExistingWorkPolicy.KEEP, richiesta)
+        }
+
         fun ferma(context: Context) {
             WorkManager.getInstance(context).run {
                 cancelUniqueWork(PERIODICO)
                 cancelUniqueWork(SUBITO)
+                cancelUniqueWork(A_MANO)
             }
         }
     }

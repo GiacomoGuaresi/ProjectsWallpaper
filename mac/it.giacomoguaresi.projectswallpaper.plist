@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Lancia aggiorna-sfondo.sh all'accesso e poi ogni ora. Se il Mac dormiva,
-  launchd recupera il giro perso al risveglio. installa.sh sostituisce __HOME__
+  Lancia aggiorna-sfondo.sh all'accesso e poi ogni ora al minuto 12: la
+  pipeline parte al minuto 7 (pg_cron su Supabase) e in un paio di minuti
+  pubblica la foto nuova. Se il Mac dormiva, launchd recupera il giro perso al
+  risveglio. installa.sh sostituisce __HOME__
   con la cartella dell'utente: nei plist "~" non vale.
 -->
 <plist version="1.0">
@@ -16,8 +18,11 @@
   </array>
   <key>RunAtLoad</key>
   <true/>
-  <key>StartInterval</key>
-  <integer>3600</integer>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Minute</key>
+    <integer>12</integer>
+  </dict>
   <key>StandardOutPath</key>
   <string>__HOME__/Library/Logs/ProjectsWallpaper.log</string>
   <key>StandardErrorPath</key>

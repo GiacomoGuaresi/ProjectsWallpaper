@@ -3,18 +3,22 @@
 La **Foresta** di [Projects](https://github.com/GiacomoGuaresi/Projects) come sfondo di PC e telefono, aggiornata circa ogni ora.
 
 ```
-GitHub Actions (ogni ora)                GitHub Pages                     dispositivi
-Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (launchd, ogni ora)
+Supabase pg_cron (ogni ora) ─┐
+projectswallpaper, widget  ──┴► funzione foresta-aggiorna ──► workflow_dispatch
+
+GitHub Actions                           GitHub Pages                     dispositivi
+Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (launchd, ogni ora al :12)
 entra con la passphrase, fotografa                                         Windows (Utilità di pianificazione)
                                                                            Linux (timer systemd utente)
                                        …/widget.png + widget.json  ──►  Android (widget, WorkManager)
 ```
 
+- **Orologio** ([`foresta-aggiorna`](supabase/functions/foresta-aggiorna/index.ts), [`sql/foresta-aggiorna.sql`](sql/foresta-aggiorna.sql)): il cron di GitHub Actions è *best effort* e salta spesso ore intere, quindi il giro orario lo fa partire pg_cron sul progetto Supabase di Projects, al minuto 7, chiamando una Edge Function che lancia il workflow con `workflow_dispatch`. La stessa funzione la chiamano il comando `projectswallpaper` e il tocco sul widget. È pubblica, ma non parte un giro se ce n'è già uno in corso, né a mano entro 3 minuti dall'ultimo; il giro orario salta se ce n'è stato uno riuscito negli ultimi 20 minuti. Il cron di GitHub resta di riserva ogni 3 ore.
 - **Pipeline** ([`pipeline/genera.ts`](pipeline/genera.ts), [`genera.yml`](.github/workflows/genera.yml)): Chromium headless apre la [modalità sfondo](https://github.com/GiacomoGuaresi/Projects/blob/main/doc/08-interfaccia.md) di Projects, cioè solo la scena senza interfaccia, con l'ora di Roma e "riduci movimento". Aspetta che dati e meteo siano arrivati e salva una PNG per formato. Se qualcosa va storto il deploy non parte, e restano le foto dell'ora prima.
 - **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600), `widget.png` (1600×1200, solo la scena), `widget.json` (stagione, meteo, alba e tramonto, luna, alberi, boschetti, arbusti, avanzamento e alberi della settimana, letti dalla card del desktop) e `info.json` (quando sono state generate). Sono pubbliche, quindi niente titoli né nomi di progetti.
 - **Overlay**: in basso a sinistra una card con data, meteo e temperatura a Milano, alba, tramonto e luna, e i numeri della foresta (alberi, boschetti, arbusti, avanzamento, alberi piantati in settimana). Pannelli e posizione si scelgono per formato con `parametri` in `FORMATI` ([`genera.ts`](pipeline/genera.ts)), ad esempio `pannelli=oggi,numeri&posizione=basso-sinistra`. Tutte le opzioni sono nella doc di Projects, "Modalità sfondo".
-- **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato ogni ora e all'accesso dal pianificatore del sistema. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
-- **Comando** `projectswallpaper`, installato insieme al resto: fa partire subito il giro pianificato e ne mostra l'esito. `projectswallpaper forza` riscarica e rimette la foto anche se non è cambiata, `projectswallpaper log` mostra le ultime righe del log.
+- **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato all'accesso e ogni ora al minuto 12 dal pianificatore del sistema, cioè poco dopo la pipeline. Dopo un aggiornamento del repo va rilanciato `installa`. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
+- **Comando** `projectswallpaper`, installato insieme al resto: fa rigenerare la foto alla pipeline, aspetta che sia pubblicata (un paio di minuti, al massimo 5), poi fa partire il giro pianificato e ne mostra l'esito. `projectswallpaper forza` fa lo stesso e rimette la foto anche se non è cambiata, `projectswallpaper scarica` scarica solo l'ultima pubblicata senza rigenerarla, `projectswallpaper log` mostra le ultime righe del log.
 
 ## Mac
 
@@ -37,7 +41,7 @@ powershell -ExecutionPolicy Bypass -File windows\installa.ps1      # installa e 
 powershell -ExecutionPolicy Bypass -File windows\disinstalla.ps1   # toglie tutto
 ```
 
-- Attività **ProjectsWallpaper** nell'Utilità di pianificazione: all'accesso e poi ogni ora, solo con l'utente collegato.
+- Attività **ProjectsWallpaper** nell'Utilità di pianificazione: all'accesso e poi ogni ora al minuto 12, solo con l'utente collegato.
 - Aggiornare subito: `projectswallpaper` (o `Start-ScheduledTask -TaskName ProjectsWallpaper`). Il comando è `projectswallpaper.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`, già nel `PATH`.
 - Registro e foto: `%LOCALAPPDATA%\ProjectsWallpaper\` (`registro.log`)
 - Adattamento *Riempi*: su uno schermo 16:9 la foto 16:10 perde un filo sopra e sotto, dove c'è solo cielo.
@@ -52,7 +56,7 @@ Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché sa
 ```
 
 - Desktop supportati: GNOME (Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE e sway. Su altri window manager X11 serve `feh`.
-- Timer systemd **utente** `projectswallpaper.timer`: ogni ora, un minuto dopo l'accesso, con recupero dei giri persi.
+- Timer systemd **utente** `projectswallpaper.timer`: ogni ora al minuto 12, un minuto dopo l'accesso, con recupero dei giri persi.
 - Aggiornare subito: `projectswallpaper` (o `systemctl --user start projectswallpaper.service`). Il comando sta in `~/.local/bin`.
 - Log: `journalctl --user -u projectswallpaper` · Prossimi giri: `systemctl --user list-timers`
 - File: `~/.local/share/projectswallpaper/` (foto), `~/.config/projectswallpaper/config.env` (desktop e display salvati). Se cambi desktop, rilancia `installa.sh`.
@@ -60,7 +64,7 @@ Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché sa
 
 ## Android
 
-Un widget per la home con la Foresta: la vista scorre lenta sulla foto (25 s per andare, 25 per tornare) con l'ora. Grande (da 200dp per lato): in alto ora, data e stagione, in basso una card con meteo, alba, tramonto e luna, alberi, boschetti e arbusti, avanzamento e alberi della settimana. Piccolo: solo la card, con ora, data, meteo e alberi. Ora e data sono `TextClock`, le aggiorna il sistema ogni minuto. Toccandolo si apre la Foresta. Solo il widget: lo sfondo del telefono resta com'è.
+Un widget per la home con la Foresta: la vista scorre lenta sulla foto (25 s per andare, 25 per tornare) con l'ora. Grande (da 200dp per lato): in alto ora, data e stagione, in basso una card con meteo, alba, tramonto e luna, alberi, boschetti e arbusti, avanzamento e alberi della settimana. Piccolo: solo la card, con ora, data, meteo e alberi. Ora e data sono `TextClock`, le aggiorna il sistema ogni minuto. Toccandolo si rigenera la foto: parte la pipeline, e quando la foto nuova è pubblicata (un paio di minuti) il widget si ridisegna. Solo il widget: lo sfondo del telefono resta com'è.
 
 - Installazione: l'APK `foresta-*.apk` dall'ultima [Release](https://github.com/GiacomoGuaresi/ProjectsWallpaper/releases) (consentire le app da origini sconosciute), poi dalla scelta dei widget del launcher **Foresta**. Non c'è un'icona nel drawer: l'app è solo il widget.
 - Ogni ora (WorkManager, solo con la rete) scarica `widget.png` e `widget.json` se sono cambiati, e ridisegna. Il meteo più vecchio di 3 ore non si mostra.
@@ -92,7 +96,12 @@ Configurazione una tantum del repo:
 1. **Secret** `FORESTA_PASSPHRASE` con la passphrase dell'account condiviso (Settings → Secrets and variables → Actions), oppure `gh secret set FORESTA_PASSPHRASE`.
 2. **Pages**: Settings → Pages → Source: *GitHub Actions*.
 
-Rigenerare subito: `gh workflow run genera.yml` (o *Run workflow* da Actions).
+3. **Orologio su Supabase** (progetto di Projects):
+   - un token GitHub fine-grained solo per questo repo, con *Actions: Read and write*, come secret della funzione: `supabase secrets set GITHUB_DISPATCH_TOKEN=… --project-ref <ref>`;
+   - la funzione: `supabase functions deploy foresta-aggiorna --project-ref <ref>` (pubblica, vedi [`supabase/config.toml`](supabase/config.toml));
+   - il giro orario: [`sql/foresta-aggiorna.sql`](sql/foresta-aggiorna.sql) nel SQL editor.
+
+Rigenerare subito: `projectswallpaper`, `curl -X POST https://<ref>.supabase.co/functions/v1/foresta-aggiorna`, oppure `gh workflow run genera.yml`.
 
 In locale:
 
@@ -104,7 +113,7 @@ FORESTA_INDIRIZZO=http://localhost:5173/Projects/ FORESTA_PASSPHRASE=… npm run
 
 Il risultato è in `uscita/` (non versionata).
 
-⚠️ GitHub **sospende i cron** dei repo pubblici dopo 60 giorni senza commit. Se lo sfondo smette di cambiare, basta *Enable workflow* nella scheda Actions, oppure un commit.
+Se lo sfondo smette di cambiare: `select * from cron.job_run_details order by start_time desc limit 10;` e `select * from net._http_response order by created desc limit 10;` nel SQL editor dicono se pg_cron chiama e cosa risponde la funzione (per esempio un 401 di GitHub se il token è scaduto). GitHub sospende il cron di riserva dopo 60 giorni senza commit, ma non `workflow_dispatch`.
 
 ## Prossimi passi
 

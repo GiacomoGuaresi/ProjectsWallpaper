@@ -3,15 +3,18 @@
 # (Settings → Secrets and variables → Actions → Secrets). Se la foto non riesce
 # il deploy non parte, e su Pages restano le immagini dell'ora prima.
 #
-# GitHub disattiva i cron dei repo pubblici dopo 60 giorni senza commit: per
-# riattivarlo basta "Enable workflow" in Actions, o un commit.
+# Il giro orario lo fa partire pg_cron di Supabase con workflow_dispatch, tramite
+# la funzione foresta-aggiorna (sql/foresta-aggiorna.sql): il cron di GitHub
+# salta spesso ore intere. Lo stesso fanno, a richiesta, il comando
+# projectswallpaper e il tocco sul widget.
 
 name: Genera
 
 on:
   schedule:
-    # Al minuto 7: le ore tonde sono quelle in cui i cron di GitHub ritardano di più.
-    - cron: '7 * * * *'
+    # Solo di riserva, se Supabase non chiama. GitHub disattiva i cron dei repo
+    # pubblici dopo 60 giorni senza commit; workflow_dispatch funziona comunque.
+    - cron: '37 */3 * * *'
   push:
     branches: [main]
     # L'app Android non cambia le foto.
