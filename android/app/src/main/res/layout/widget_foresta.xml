@@ -240,4 +240,35 @@
                 android:layout_marginStart="8dp" />
         </LinearLayout>
     </LinearLayout>
+
+    <!--
+      Mentre la pipeline rigenera la foto (dopo un tocco): sopra a tutto, un velo
+      sulla foto sfocata (la sfoca Disegno.kt) con la rotellina, che gira da sé.
+    -->
+    <LinearLayout
+        android:id="@+id/rigenero"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/velo"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/pannello_testo" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:shadowColor="#99000000"
+            android:shadowRadius="4"
+            android:text="@string/widget_rigenero"
+            android:textColor="@color/pannello_testo"
+            android:textSize="14sp" />
+    </LinearLayout>
 </FrameLayout>

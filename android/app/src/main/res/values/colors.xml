@@ -8,4 +8,6 @@
     <color name="pannello">#A60F1A14</color>
     <color name="pannello_testo">#FFFFFF</color>
     <color name="pannello_testo_tenue">#D9FFFFFF</color>
+    <!-- Sulla foto sfocata mentre la pipeline la rigenera. -->
+    <color name="velo">#590F1A14</color>
 </resources>

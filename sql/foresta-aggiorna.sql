@@ -16,7 +16,7 @@ select cron.schedule(
   '7 * * * *',
   $$
   select net.http_post(
-    url := 'https://fvsohjlrulwabvfvcfxo.supabase.co/functions/v1/foresta-aggiorna?orario',
+    url := 'https://fvsohjlrulwabvfvcfxo.supabase.co/functions/v1/foresta-aggiorna',
     timeout_milliseconds := 15000
   )
   $$

@@ -1,26 +1,26 @@
 // Fa partire la pipeline (workflow "Genera", genera.yml) con workflow_dispatch.
 //
 // Il cron di GitHub Actions è "best effort": spesso salta ore intere. L'orologio
-// vero è pg_cron di Supabase, che chiama questa funzione ogni ora con ?orario
+// vero è pg_cron di Supabase, che chiama questa funzione ogni ora
 // (sql/foresta-aggiorna.sql). La chiamano anche il comando projectswallpaper dei
 // PC e il tocco sul widget Android, per avere subito una foto nuova.
 //
 // È pubblica (verify_jwt = false): non legge né scrive dati, e al peggio fa
 // partire la pipeline. Per non accodare giri inutili:
 //   - se un giro è già in coda o in corso, non ne parte un altro;
-//   - a mano, non prima di MINUTI_MANUALE dall'ultimo giro partito;
-//   - ?orario, non se l'ultimo giro riuscito è di meno di MINUTI_ORARIO fa.
+//   - se la foto online ha meno di MINUTI_FRESCA (l'ultimo giro riuscito), va bene quella;
+//   - se l'ultimo giro è fallito, non si riprova prima di MINUTI_DOPO_ERRORE.
 //
 // Risponde { stato, dal }: "avviato" (giro partito ora), "in-corso" (c'è già un
-// giro, partito "dal"), "recente" (l'ultimo giro è di "dal", basta quello).
+// giro, partito "dal"), "recente" (la foto online è di "dal", basta quella).
 //
 // Secret GITHUB_DISPATCH_TOKEN: un token fine-grained solo per il repo
 // ProjectsWallpaper, con il permesso Actions in lettura e scrittura.
 
 const REPO = 'GiacomoGuaresi/ProjectsWallpaper'
 const WORKFLOW = 'genera.yml'
-const MINUTI_MANUALE = 3
-const MINUTI_ORARIO = 20
+const MINUTI_FRESCA = 15
+const MINUTI_DOPO_ERRORE = 3
 
 type Giro = { status: string; conclusion: string | null; created_at: string }
 
@@ -42,8 +42,6 @@ const minutiFa = (data: string) => (Date.now() - Date.parse(data)) / 60_000
 Deno.serve(async (richiesta) => {
   const json = (corpo: unknown, stato = 200) =>
     new Response(JSON.stringify(corpo), { status: stato, headers: { 'Content-Type': 'application/json' } })
-  const orario = new URL(richiesta.url).searchParams.has('orario')
-
   try {
     const elenco = await github('runs?per_page=10')
     if (!elenco.ok) return json({ errore: `GitHub: HTTP ${elenco.status}` }, 502)
@@ -53,9 +51,12 @@ Deno.serve(async (richiesta) => {
     const inCorso = giri.find((g) => g.status !== 'completed')
     if (inCorso) return json({ stato: 'in-corso', dal: inCorso.created_at })
 
-    const ultimo = orario ? giri.find((g) => g.conclusion === 'success') : giri[0]
-    if (ultimo && minutiFa(ultimo.created_at) < (orario ? MINUTI_ORARIO : MINUTI_MANUALE)) {
-      return json({ stato: 'recente', dal: ultimo.created_at })
+    const riuscito = giri.find((g) => g.conclusion === 'success')
+    if (riuscito && minutiFa(riuscito.created_at) < MINUTI_FRESCA) {
+      return json({ stato: 'recente', dal: riuscito.created_at })
+    }
+    if (giri[0] && minutiFa(giri[0].created_at) < MINUTI_DOPO_ERRORE) {
+      return json({ stato: 'recente', dal: riuscito?.created_at ?? giri[0].created_at })
     }
 
     const avvio = await github('dispatches', { method: 'POST', body: JSON.stringify({ ref: 'main' }) })

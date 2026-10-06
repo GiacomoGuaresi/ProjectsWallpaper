@@ -3,5 +3,5 @@
     <string name="widget_nome">Foresta</string>
     <string name="widget_descrizione">La Foresta di Projects, aggiornata ogni ora</string>
     <string name="widget_attesa">La Foresta sta arrivando…</string>
-    <string name="widget_aggiorno">Rigenero la Foresta: un paio di minuti…</string>
+    <string name="widget_rigenero">Rigenero la Foresta…</string>
 </resources>

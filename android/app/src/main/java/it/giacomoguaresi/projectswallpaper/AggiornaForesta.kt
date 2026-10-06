@@ -51,7 +51,13 @@ class AggiornaForesta(context: Context, parametri: WorkerParameters) : Coroutine
                 errore = true
             }
         }
-        if (nuovi) WidgetForesta.ridisegnaTutti(applicationContext)
+        if (inputData.getBoolean(RIGENERA, false)) {
+            // Via la rotellina, anche se la foto è la stessa di prima.
+            WidgetForesta.rigenero(applicationContext, false)
+            WidgetForesta.ridisegnaTutti(applicationContext)
+        } else if (nuovi) {
+            WidgetForesta.ridisegnaTutti(applicationContext)
+        }
         // Il giro periodico riprova tra un'ora; quello "subito" qualche volta prima.
         if (errore && PERIODICO !in tags && runAttemptCount < 3) Result.retry() else Result.success()
     }

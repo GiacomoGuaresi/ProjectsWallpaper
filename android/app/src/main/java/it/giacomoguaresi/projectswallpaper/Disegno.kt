@@ -31,6 +31,9 @@ object Disegno {
     /** Lo zoom più forte della carrellata (res/anim/carrellata_zoom.xml): la foto deve restare nitida. */
     private const val ZOOM_MASSIMO = 1.28f
 
+    /** Quante volte dimezzare la foto per sfocarla: 5 è un trentaduesimo. */
+    private const val GRADINI_SFOCATURA = 5
+
     /** Da questa misura in su (dp) stagione e card; sotto, solo ora e data. */
     private const val GRANDE_DP = 200
 
@@ -60,13 +63,15 @@ object Disegno {
     fun disegna(context: Context, manager: AppWidgetManager, id: Int) {
         val viste = RemoteViews(context.packageName, R.layout.widget_foresta)
         val opzioni = manager.getAppWidgetOptions(id)
-        val foto = foto(context, opzioni)
+        val rigenero = WidgetForesta.rigenero(context)
+        val foto = foto(context, opzioni)?.let { if (rigenero) sfoca(it) else it }
         if (foto != null) {
             viste.setImageViewBitmap(R.id.foto, foto)
             viste.setViewVisibility(R.id.carrellata, View.VISIBLE)
             viste.setViewVisibility(R.id.attesa, View.GONE)
         }
         pannello(context, viste, grande(opzioni))
+        viste.setViewVisibility(R.id.rigenero, if (rigenero) View.VISIBLE else View.GONE)
         viste.setOnClickPendingIntent(android.R.id.background, aggiorna(context))
         manager.updateAppWidget(id, viste)
     }
@@ -97,6 +102,18 @@ object Disegno {
         val finale = scala * campione
         if (finale >= 1f) return foto
         return foto.scale((foto.width * finale).roundToInt(), (foto.height * finale).roundToInt())
+    }
+
+    /**
+     * La foto sfocata mentre si rigenera: i RemoteViews non hanno filtri, quindi la si
+     * rimpicciolisce molto e la si riporta alla sua misura, dimezzando e raddoppiando a
+     * gradini: in un passo solo il filtro bilineare lascerebbe i quadretti.
+     */
+    private fun sfoca(foto: Bitmap): Bitmap {
+        var sfocata = foto
+        repeat(GRADINI_SFOCATURA) { sfocata = sfocata.scale(max(1, sfocata.width / 2), max(1, sfocata.height / 2)) }
+        repeat(GRADINI_SFOCATURA - 1) { sfocata = sfocata.scale(sfocata.width * 2, sfocata.height * 2) }
+        return sfocata.scale(foto.width, foto.height)
     }
 
     /** In verticale il widget è largo MIN_WIDTH e alto MAX_HEIGHT. */
