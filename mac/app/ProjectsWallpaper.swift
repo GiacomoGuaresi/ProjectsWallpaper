@@ -183,13 +183,14 @@ final class App: NSObject, NSApplicationDelegate {
 
   enum Aspetto { case riposo, lavora, errore }
 
-  // Un albero, come la Foresta. Mentre lavora le frecce girano; dopo un errore
-  // l'albero ha il punto esclamativo finché un giro non va a buon fine.
-  // Il simbolo sta in un NSImageView sopra il pulsante perché solo lì si può animare.
+  // Tre abeti, la Foresta. Mentre lavora pulsano piano; dopo un errore c'è il
+  // triangolo col punto esclamativo finché un giro non va a buon fine.
+  // L'immagine sta in un NSImageView sopra il pulsante perché solo lì si può animare.
   lazy var vista: NSImageView = {
     let v = NSImageView()
     v.translatesAutoresizingMaskIntoConstraints = false
     v.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+    v.wantsLayer = true
     voce.button?.addSubview(v)
     if let b = voce.button {
       NSLayoutConstraint.activate([
@@ -200,19 +201,50 @@ final class App: NSObject, NSApplicationDelegate {
     return v
   }()
 
-  func icona(_ aspetto: Aspetto) {
-    let nomi: [String]
-    switch aspetto {
-    case .riposo: nomi = ["tree", "leaf"]
-    case .lavora: nomi = ["arrow.trianglehead.2.clockwise", "arrow.triangle.2.circlepath"]
-    case .errore: nomi = ["exclamationmark.triangle"]
+  static let foresta: NSImage = {
+    // Un abete: tre palchi sovrapposti, che si stringono salendo, e il tronco.
+    func abete(_ p: NSBezierPath, x: CGFloat, base: CGFloat, h: CGFloat, w: CGFloat) {
+      for i in 0..<3 {
+        let f = CGFloat(i) / 3
+        let y0 = base + h * 0.18 + h * 0.82 * f * 0.62
+        let larg = w * (1 - f * 0.35)
+        p.move(to: NSPoint(x: x - larg / 2, y: y0))
+        p.line(to: NSPoint(x: x + larg / 2, y: y0))
+        p.line(to: NSPoint(x: x, y: min(y0 + h * 0.41, base + h)))
+        p.close()
+      }
+      p.appendRect(NSRect(x: x - w * 0.08, y: base, width: w * 0.16, height: h * 0.2))
     }
-    let img = nomi.lazy.compactMap { NSImage(systemSymbolName: $0, accessibilityDescription: "ProjectsWallpaper") }.first
+    let img = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
+      let p = NSBezierPath()
+      abete(p, x: 4.5, base: 2, h: 10, w: 7)
+      abete(p, x: 13.5, base: 2, h: 11, w: 7.5)
+      abete(p, x: 9, base: 2, h: 14.5, w: 9)
+      NSColor.black.setFill()
+      p.fill()
+      return true
+    }
+    img.isTemplate = true
+    img.accessibilityDescription = "ProjectsWallpaper"
+    return img
+  }()
+
+  func icona(_ aspetto: Aspetto) {
+    let img = aspetto == .errore
+      ? NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "ProjectsWallpaper")
+      : App.foresta
     img?.isTemplate = true
-    if #available(macOS 14, *) { vista.removeAllSymbolEffects() }
     vista.image = img
-    if aspetto == .lavora, #available(macOS 15, *) {
-      vista.addSymbolEffect(.rotate.clockwise.byLayer, options: .repeat(.continuous))
+    vista.layer?.removeAnimation(forKey: "pulsa")
+    if aspetto == .lavora {
+      let a = CABasicAnimation(keyPath: "opacity")
+      a.fromValue = 1
+      a.toValue = 0.3
+      a.duration = 0.9
+      a.autoreverses = true
+      a.repeatCount = .infinity
+      a.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+      vista.layer?.add(a, forKey: "pulsa")
     }
     voce.button?.toolTip = switch aspetto {
     case .riposo: "ProjectsWallpaper"
