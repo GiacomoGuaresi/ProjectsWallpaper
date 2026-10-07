@@ -1,7 +1,7 @@
 #!/bin/bash
 # Scarica la foto della Foresta e, se è cambiata, la mette come sfondo su tutte
-# le scrivanie. La lancia l'app nella barra dei menu (ogni ora, al risveglio, dal
-# menu) e il comando projectswallpaper.
+# le scrivanie. La lancia l'app nella barra dei menu: ogni ora, al risveglio e
+# dal menu.
 #
 # macOS non ricarica uno sfondo con lo stesso percorso: ogni foto nuova ha un
 # nome nuovo, e le vecchie si cancellano.
@@ -16,20 +16,6 @@ SCARICATA="$CARTELLA/scaricata.png"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
 mkdir -p "$CARTELLA"
-
-# Un giro alla volta: lo possono lanciare sia l'app sia il comando.
-BLOCCO="$CARTELLA/.giro"
-if ! mkdir "$BLOCCO" 2>/dev/null; then
-  # Un blocco più vecchio di 10 minuti è rimasto da un giro interrotto male.
-  if [ -n "$(find "$BLOCCO" -maxdepth 0 -mmin +10)" ]; then
-    rmdir "$BLOCCO" && mkdir "$BLOCCO"
-  else
-    log "giro già in corso"
-    exit 0
-  fi
-fi
-trap 'rmdir "$BLOCCO" 2>/dev/null || true' EXIT
-
 rm -f "$SCARICATA"
 
 # Con -z il server risponde 304 se la foto non è cambiata, e curl non scrive niente.
