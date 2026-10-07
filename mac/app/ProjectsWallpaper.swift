@@ -216,12 +216,20 @@ final class App: NSObject, NSApplicationDelegate {
       p.appendRect(NSRect(x: x - w * 0.08, y: base, width: w * 0.16, height: h * 0.2))
     }
     let img = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
-      let p = NSBezierPath()
-      abete(p, x: 4.5, base: 2, h: 10, w: 7)
-      abete(p, x: 13.5, base: 2, h: 11, w: 7.5)
-      abete(p, x: 9, base: 2, h: 14.5, w: 9)
+      let lati = NSBezierPath()
+      abete(lati, x: 4.5, base: 2, h: 10, w: 7)
+      abete(lati, x: 13.5, base: 2, h: 11, w: 7.5)
+      let centro = NSBezierPath()
+      abete(centro, x: 9, base: 2, h: 14.5, w: 9)
       NSColor.black.setFill()
-      p.fill()
+      lati.fill()
+      // Un bordo vuoto attorno all'abete centrale lo stacca da quelli ai lati.
+      NSGraphicsContext.current?.compositingOperation = .clear
+      centro.lineWidth = 2
+      centro.lineJoinStyle = .round
+      centro.stroke()
+      NSGraphicsContext.current?.compositingOperation = .sourceOver
+      centro.fill()
       return true
     }
     img.isTemplate = true
