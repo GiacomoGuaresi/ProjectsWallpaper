@@ -1,9 +1,9 @@
 #!/bin/bash
 # Aggiorna lo sfondo adesso, senza aspettare il giro orario. Lo installa
 # installa.sh in ~/.local/bin. Prima fa rigenerare la foto alla pipeline
-# (funzione foresta-aggiorna su Supabase) e aspetta che sia pubblicata, poi fa
-# partire il LaunchAgent, così il giro è quello di sempre: stessi permessi su
-# System Events, stesso log.
+# (funzione foresta-aggiorna su Supabase) e aspetta che sia pubblicata, poi
+# lancia aggiorna-sfondo.sh, lo stesso giro dell'app nella barra dei menu, con
+# lo stesso log. Lo stesso lo fa "Aggiorna ora" nel menu dell'app.
 #
 #   projectswallpaper          rigenera la foto, la scarica e la mette come sfondo
 #   projectswallpaper forza    come sopra, e la rimette anche se non è cambiata
@@ -12,7 +12,6 @@
 
 set -euo pipefail
 
-ETICHETTA="it.giacomoguaresi.projectswallpaper"
 ULTIMA="$HOME/Library/Application Support/ProjectsWallpaper/ultima.png"
 LOG="$HOME/Library/Logs/ProjectsWallpaper.log"
 FUNZIONE="https://fvsohjlrulwabvfvcfxo.supabase.co/functions/v1/foresta-aggiorna"
@@ -54,7 +53,8 @@ case "${1:-aggiorna}" in
   *) echo "uso: projectswallpaper [aggiorna|forza|scarica|log]" >&2; exit 2 ;;
 esac
 
-if ! launchctl print "gui/$UID/$ETICHETTA" >/dev/null 2>&1; then
+SCRIPT="$HOME/Library/Application Support/ProjectsWallpaper/aggiorna-sfondo.sh"
+if [ ! -f "$SCRIPT" ]; then
   echo "ProjectsWallpaper non è installato: lancia mac/installa.sh" >&2
   exit 1
 fi
@@ -63,19 +63,5 @@ fi
 # Con una data vecchissima il server non può rispondere "non modificata".
 [ "${1:-}" = forza ] && [ -f "$ULTIMA" ] && touch -t 197001010000 "$ULTIMA"
 
-in_corso() { launchctl print "gui/$UID/$ETICHETTA" | grep -q 'state = running'; }
-
-prima=$(stat -f %z "$LOG" 2>/dev/null || echo 0)
-launchctl kickstart "gui/$UID/$ETICHETTA"
-
-# kickstart non aspetta la fine del giro: si aspetta che il log cresca e il job sia finito.
-for _ in $(seq 120); do
-  sleep 1
-  ora=$(stat -f %z "$LOG" 2>/dev/null || echo 0)
-  if [ "$ora" -gt "$prima" ] && ! in_corso; then
-    tail -c +"$((prima + 1))" "$LOG"
-    exit 0
-  fi
-done
-echo "Il giro non è finito entro 2 minuti: guarda $LOG" >&2
-exit 1
+# Il giro è lo stesso dell'app; l'esito va sia qui sia nel log.
+/bin/bash "$SCRIPT" 2>&1 | tee -a "$LOG"

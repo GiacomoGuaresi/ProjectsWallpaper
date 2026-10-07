@@ -4,10 +4,10 @@ La **Foresta** di [Projects](https://github.com/GiacomoGuaresi/Projects) come sf
 
 ```
 Supabase pg_cron (ogni ora) ─┐
-projectswallpaper, widget  ──┴► funzione foresta-aggiorna ──► workflow_dispatch
+menu Mac, comando, widget ───┴► funzione foresta-aggiorna ──► workflow_dispatch
 
 GitHub Actions                           GitHub Pages                     dispositivi
-Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (launchd, ogni ora al :12)
+Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (app nella barra dei menu: ogni ora al :12 e al risveglio)
 entra con la passphrase, fotografa                                         Windows (Utilità di pianificazione)
                                                                            Linux (timer systemd utente)
                                        …/widget.png + widget.json  ──►  Android (widget, WorkManager)
@@ -22,13 +22,16 @@ entra con la passphrase, fotografa                                         Windo
 
 ## Mac
 
+Un'app nella barra dei menu ([`mac/app/ProjectsWallpaper.swift`](mac/app/ProjectsWallpaper.swift)), compilata da `installa.sh` con `swiftc` (serve Xcode o i Command Line Tools). Fa il giro di `aggiorna-sfondo.sh` all'avvio, ogni ora al minuto 12 e una decina di secondi dopo il risveglio dallo stop. Dal menu: **Aggiorna ora** (rigenera la foto e la mette, come `projectswallpaper`), **Scarica l'ultima foto**, **Apri il log**. Mentre lavora l'icona gira e la prima riga del menu dice cosa sta facendo.
+
 ```sh
-./mac/installa.sh      # installa e fa subito un giro
+./mac/installa.sh      # compila e installa l'app, che parte subito
 ./mac/disinstalla.sh   # toglie tutto
 ```
 
-- La prima volta macOS chiede di consentire a `bash` (o al Terminale) di controllare **System Events**: serve per cambiare lo sfondo.
-- Aggiornare subito: `projectswallpaper` (o `launchctl kickstart gui/$UID/it.giacomoguaresi.projectswallpaper`). Il comando sta in `~/.local/bin`, che va aggiunto al `PATH` se non c'è già.
+- L'app è `~/Applications/ProjectsWallpaper.app`, lanciata all'accesso dal LaunchAgent `it.giacomoguaresi.projectswallpaper`. Se si chiude male launchd la rilancia; con **Esci** resta chiusa fino al prossimo accesso (o `launchctl kickstart gui/$UID/it.giacomoguaresi.projectswallpaper`).
+- La prima volta macOS chiede di consentire a **ProjectsWallpaper** di controllare **System Events**: serve per cambiare lo sfondo. L'app è firmata ad hoc, quindi dopo un `installa.sh` il permesso può essere richiesto di nuovo.
+- Dal terminale: `projectswallpaper`. Il comando sta in `~/.local/bin`, che va aggiunto al `PATH` se non c'è già. Un giro alla volta: se ne è già in corso uno, l'altro si ferma subito.
 - Log: `~/Library/Logs/ProjectsWallpaper.log` · Stato: `launchctl print gui/$UID/it.giacomoguaresi.projectswallpaper`
 - File: `~/Library/Application Support/ProjectsWallpaper/`
 

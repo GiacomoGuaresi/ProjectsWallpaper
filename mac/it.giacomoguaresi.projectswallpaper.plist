@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Lancia aggiorna-sfondo.sh all'accesso e poi ogni ora al minuto 12: la
-  pipeline parte al minuto 7 (pg_cron su Supabase) e in un paio di minuti
-  pubblica la foto nuova. Se il Mac dormiva, launchd recupera il giro perso al
-  risveglio. installa.sh sostituisce __HOME__
-  con la cartella dell'utente: nei plist "~" non vale.
+  Lancia l'app nella barra dei menu all'accesso. L'orologio è dell'app: fa il
+  giro di aggiorna-sfondo.sh ogni ora al minuto 12 (la pipeline parte al minuto
+  7, pg_cron su Supabase, e in un paio di minuti pubblica la foto nuova), al
+  risveglio e all'avvio. Se l'app si chiude male launchd la rilancia; con "Esci"
+  resta chiusa fino al prossimo accesso. installa.sh sostituisce __HOME__ con
+  la cartella dell'utente: nei plist "~" non vale.
 -->
 <plist version="1.0">
 <dict>
@@ -13,21 +14,20 @@
   <string>it.giacomoguaresi.projectswallpaper</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>__HOME__/Library/Application Support/ProjectsWallpaper/aggiorna-sfondo.sh</string>
+    <string>__HOME__/Applications/ProjectsWallpaper.app/Contents/MacOS/ProjectsWallpaper</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
-  <key>StartCalendarInterval</key>
+  <key>KeepAlive</key>
   <dict>
-    <key>Minute</key>
-    <integer>12</integer>
+    <key>SuccessfulExit</key>
+    <false/>
   </dict>
   <key>StandardOutPath</key>
   <string>__HOME__/Library/Logs/ProjectsWallpaper.log</string>
   <key>StandardErrorPath</key>
   <string>__HOME__/Library/Logs/ProjectsWallpaper.log</string>
   <key>ProcessType</key>
-  <string>Background</string>
+  <string>Interactive</string>
 </dict>
 </plist>
