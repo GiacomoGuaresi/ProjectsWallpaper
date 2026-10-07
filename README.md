@@ -4,21 +4,21 @@ La **Foresta** di [Projects](https://github.com/GiacomoGuaresi/Projects) come sf
 
 ```
 Supabase pg_cron (ogni ora) ─┐
-menu Mac, comando, widget ───┴► funzione foresta-aggiorna ──► workflow_dispatch
+app, comando, widget ────────┴► funzione foresta-aggiorna ──► workflow_dispatch
 
 GitHub Actions                           GitHub Pages                     dispositivi
 Playwright apre #/foresta?sfondo  ──►  …/ProjectsWallpaper/desktop.png  ──►  Mac (app nella barra dei menu: ogni ora al :12 e al risveglio)
 entra con la passphrase, fotografa                                         Windows (Utilità di pianificazione)
-                                                                           Linux (timer systemd utente)
+                                                                           Linux (app nel vassoio: ogni ora al :12 e al risveglio)
                                        …/widget.png + widget.json  ──►  Android (widget, WorkManager)
 ```
 
-- **Orologio** ([`foresta-aggiorna`](supabase/functions/foresta-aggiorna/index.ts), [`sql/foresta-aggiorna.sql`](sql/foresta-aggiorna.sql)): il cron di GitHub Actions è *best effort* e salta spesso ore intere, quindi il giro orario lo fa partire pg_cron sul progetto Supabase di Projects, al minuto 7, chiamando una Edge Function che lancia il workflow con `workflow_dispatch`. La stessa funzione la chiamano **Aggiorna ora** nell'app del Mac, il comando `projectswallpaper` e il tocco sul widget. È pubblica, ma non parte un giro se ce n'è già uno in corso, né se la foto online ha meno di 15 minuti: allora va bene quella. Il cron di GitHub resta di riserva ogni 3 ore.
+- **Orologio** ([`foresta-aggiorna`](supabase/functions/foresta-aggiorna/index.ts), [`sql/foresta-aggiorna.sql`](sql/foresta-aggiorna.sql)): il cron di GitHub Actions è *best effort* e salta spesso ore intere, quindi il giro orario lo fa partire pg_cron sul progetto Supabase di Projects, al minuto 7, chiamando una Edge Function che lancia il workflow con `workflow_dispatch`. La stessa funzione la chiamano **Aggiorna ora** nelle app di Mac e Linux, il comando `projectswallpaper` su Windows e il tocco sul widget. È pubblica, ma non parte un giro se ce n'è già uno in corso, né se la foto online ha meno di 15 minuti: allora va bene quella. Il cron di GitHub resta di riserva ogni 3 ore.
 - **Pipeline** ([`pipeline/genera.ts`](pipeline/genera.ts), [`genera.yml`](.github/workflows/genera.yml)): Chromium headless apre la [modalità sfondo](https://github.com/GiacomoGuaresi/Projects/blob/main/doc/08-interfaccia.md) di Projects, cioè solo la scena senza interfaccia, con l'ora di Roma e "riduci movimento". Aspetta che dati e meteo siano arrivati e salva una PNG per formato. Se qualcosa va storto il deploy non parte, e restano le foto dell'ora prima.
 - **Immagini**: <https://giacomoguaresi.github.io/ProjectsWallpaper/> (anteprime), con `desktop.png` (2560×1600), `widget.png` (1600×1200, solo la scena), `widget.json` (stagione, meteo, alba e tramonto, luna, alberi, boschetti, arbusti, avanzamento e alberi della settimana, letti dalla card del desktop) e `info.json` (quando sono state generate). Sono pubbliche, quindi niente titoli né nomi di progetti.
 - **Overlay**: in basso a sinistra una card con data, meteo e temperatura a Milano, alba, tramonto e luna, e i numeri della foresta (alberi, boschetti, arbusti, avanzamento, alberi piantati in settimana). Pannelli e posizione si scelgono per formato con `parametri` in `FORMATI` ([`genera.ts`](pipeline/genera.ts)), ad esempio `pannelli=oggi,numeri&posizione=basso-sinistra`. Tutte le opzioni sono nella doc di Projects, "Modalità sfondo".
-- **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato all'accesso e ogni ora al minuto 12, cioè poco dopo la pipeline, dal pianificatore del sistema (sul Mac dall'app nella barra dei menu). Dopo un aggiornamento del repo va rilanciato `installa`. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
-- **Comando** `projectswallpaper` (Windows e Linux; sul Mac c'è il menu dell'app), installato insieme al resto: fa rigenerare la foto alla pipeline, aspetta che sia pubblicata (un paio di minuti, al massimo 5), poi fa partire il giro pianificato e ne mostra l'esito. `projectswallpaper forza` fa lo stesso e rimette la foto anche se non è cambiata, `projectswallpaper scarica` scarica solo l'ultima pubblicata senza rigenerarla, `projectswallpaper log` mostra le ultime righe del log.
+- **PC** ([`mac/`](mac/), [`windows/`](windows/), [`linux/`](linux/)): su ogni sistema uno script fa lo stesso lavoro, lanciato all'accesso e ogni ora al minuto 12, cioè poco dopo la pipeline, dal pianificatore del sistema (su Mac e Linux dall'app nella barra dei menu o nel vassoio). Dopo un aggiornamento del repo va rilanciato `installa`. Scarica la PNG solo se è cambiata (`If-Modified-Since`), la salva con un nome nuovo (alcuni sistemi non ricaricano uno sfondo con lo stesso percorso) e la mette come sfondo. Se qualcosa non va, il giro dopo riprova. Se un giro è stato perso perché il PC era spento, parte appena possibile.
+- **Comando** `projectswallpaper` (solo Windows; su Mac e Linux c'è il menu dell'app), installato insieme al resto: fa rigenerare la foto alla pipeline, aspetta che sia pubblicata (un paio di minuti, al massimo 5), poi fa partire il giro pianificato e ne mostra l'esito. `projectswallpaper forza` fa lo stesso e rimette la foto anche se non è cambiata, `projectswallpaper scarica` scarica solo l'ultima pubblicata senza rigenerarla, `projectswallpaper log` mostra le ultime righe del log.
 
 ## Mac
 
@@ -50,18 +50,20 @@ powershell -ExecutionPolicy Bypass -File windows\disinstalla.ps1   # toglie tutt
 
 ## Linux
 
-Testato solo sulla carta. Va lanciato **dentro la sessione grafica**, perché salva il desktop in uso:
+Un'app nel vassoio di sistema ([`linux/app/projectswallpaper-app.py`](linux/app/projectswallpaper-app.py)), la stessa del Mac in Python e PyQt6, pensata per Kubuntu (KDE Plasma) ma buona per ogni desktop con un vassoio. Fa il giro di `aggiorna-sfondo.sh` all'avvio, ogni ora al minuto 12 e una decina di secondi dopo il risveglio dalla sospensione. Dal menu (clic sinistro o destro sull'icona): **Aggiorna ora**, **Scarica l'ultima foto**, **Apri il log**, **Esci**. L'icona sono i tre abeti, che pulsano mentre lavora.
+
+Testato solo sulla carta. Va lanciato **dentro la sessione grafica**:
 
 ```sh
-./linux/installa.sh      # installa e fa subito un giro
-./linux/disinstalla.sh   # toglie tutto
+sudo apt install python3-pyqt6   # una volta
+./linux/installa.sh              # installa, toglie la vecchia procedura e avvia l'app
+./linux/disinstalla.sh           # toglie tutto
 ```
 
-- Desktop supportati: GNOME (Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE e sway. Su altri window manager X11 serve `feh`.
-- Timer systemd **utente** `projectswallpaper.timer`: ogni ora al minuto 12, un minuto dopo l'accesso, con recupero dei giri persi.
-- Aggiornare subito: `projectswallpaper` (o `systemctl --user start projectswallpaper.service`). Il comando sta in `~/.local/bin`.
-- Log: `journalctl --user -u projectswallpaper` · Prossimi giri: `systemctl --user list-timers`
-- File: `~/.local/share/projectswallpaper/` (foto), `~/.config/projectswallpaper/config.env` (desktop e display salvati). Se cambi desktop, rilancia `installa.sh`.
+- Desktop supportati da `aggiorna-sfondo.sh`: GNOME (Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE e sway. Su altri window manager X11 serve `feh`.
+- Parte all'accesso da `~/.config/autostart/projectswallpaper.desktop`; dopo **Esci** si riapre dal menu delle applicazioni (**ProjectsWallpaper**). Ne gira una sola alla volta.
+- Log: `~/.local/share/projectswallpaper/registro.log` · File: `~/.local/share/projectswallpaper/`
+- `installa.sh` toglie la vecchia procedura, se c'è: timer systemd utente `projectswallpaper.timer`, comando `projectswallpaper` e `~/.config/projectswallpaper/`.
 - Su sway lo sfondo vale fino al riavvio di sway. Per tenerlo, aggiungi alla config: `output * bg ~/.local/share/projectswallpaper/ultima.png fill`.
 
 ## Android
@@ -103,7 +105,7 @@ Configurazione una tantum del repo:
    - la funzione: `supabase functions deploy foresta-aggiorna --project-ref <ref>` (pubblica, vedi [`supabase/config.toml`](supabase/config.toml));
    - il giro orario: [`sql/foresta-aggiorna.sql`](sql/foresta-aggiorna.sql) nel SQL editor.
 
-Rigenerare subito: `projectswallpaper`, `curl -X POST https://<ref>.supabase.co/functions/v1/foresta-aggiorna`, oppure `gh workflow run genera.yml`.
+Rigenerare subito: **Aggiorna ora** nell'app di Mac e Linux, `projectswallpaper` su Windows, `curl -X POST https://<ref>.supabase.co/functions/v1/foresta-aggiorna`, oppure `gh workflow run genera.yml`.
 
 In locale:
 

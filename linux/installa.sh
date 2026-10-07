@@ -1,43 +1,42 @@
 #!/bin/bash
-# Installa l'aggiornamento orario dello sfondo: copia lo script, salva il
-# desktop in uso, attiva il timer systemd utente, installa il comando
-# projectswallpaper e fa subito un primo giro.
+# Installa l'app nel vassoio di sistema che aggiorna lo sfondo: copia lo script
+# e l'app, la mette nell'avvio automatico e nel menu delle applicazioni, toglie
+# la vecchia procedura (timer systemd e comando projectswallpaper) e la avvia.
 # Rilanciabile, anche per aggiornare. Da lanciare dentro la sessione grafica.
+# Serve PyQt6: sudo apt install python3-pyqt6
 
 set -euo pipefail
 
 QUI="$(cd "$(dirname "$0")" && pwd)"
-DATI="$HOME/.local/share/projectswallpaper"   # fissa: la usa anche il .service
-CONFIG="$HOME/.config/projectswallpaper"
-UNITA="$HOME/.config/systemd/user"
+DATI="$HOME/.local/share/projectswallpaper"
+APP="$DATI/projectswallpaper-app.py"
+VOCE="projectswallpaper.desktop"
 
-mkdir -p "$DATI" "$CONFIG" "$UNITA"
-cp "$QUI/aggiorna-sfondo.sh" "$DATI/"
-chmod +x "$DATI/aggiorna-sfondo.sh"
-# Il comando per aggiornare a mano: projectswallpaper [aggiorna|forza|log]
-mkdir -p "$HOME/.local/bin"
-cp "$QUI/projectswallpaper" "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin/projectswallpaper"
-cp "$QUI/projectswallpaper.service" "$QUI/projectswallpaper.timer" "$UNITA/"
+if ! python3 -c 'import PyQt6.QtWidgets' 2>/dev/null; then
+  echo "Manca PyQt6: sudo apt install python3-pyqt6, poi rilancia questo script." >&2
+  exit 1
+fi
 
-# Il servizio parte fuori dalla sessione grafica: gli si passa quello che serve
-# per trovarla. Se un giorno si cambia desktop, basta rilanciare questo script.
-{
-  echo "# Scritto da installa.sh il $(date '+%Y-%m-%d %H:%M')"
-  for v in XDG_CURRENT_DESKTOP DISPLAY WAYLAND_DISPLAY XAUTHORITY SWAYSOCK DBUS_SESSION_BUS_ADDRESS; do
-    if [ -n "${!v:-}" ]; then echo "$v=${!v}"; fi
-  done
-} > "$CONFIG/config.env"
+mkdir -p "$DATI" "$HOME/.config/autostart" "$HOME/.local/share/applications"
+cp "$QUI/aggiorna-sfondo.sh" "$QUI/app/projectswallpaper-app.py" "$DATI/"
+chmod +x "$DATI/aggiorna-sfondo.sh" "$APP"
+# All'accesso e nel menu delle applicazioni, per riaprirla dopo "Esci".
+sed "s|__HOME__|$HOME|g" "$QUI/app/$VOCE" > "$HOME/.config/autostart/$VOCE"
+sed "s|__HOME__|$HOME|g" "$QUI/app/$VOCE" > "$HOME/.local/share/applications/$VOCE"
 
-systemctl --user daemon-reload
-systemctl --user enable --now projectswallpaper.timer
-systemctl --user start projectswallpaper.service || true
+# La vecchia procedura: timer systemd utente, comando e desktop salvato.
+if systemctl --user list-unit-files projectswallpaper.timer >/dev/null 2>&1; then
+  systemctl --user disable --now projectswallpaper.timer 2>/dev/null || true
+fi
+rm -f "$HOME/.config/systemd/user/projectswallpaper.service" "$HOME/.config/systemd/user/projectswallpaper.timer"
+systemctl --user daemon-reload 2>/dev/null || true
+rm -f "$HOME/.local/bin/projectswallpaper"
+rm -rf "$HOME/.config/projectswallpaper"
 
-echo "Installato per il desktop \"${XDG_CURRENT_DESKTOP:-sconosciuto}\"."
-echo "Log: journalctl --user -u projectswallpaper"
-echo "Aggiornare a mano: projectswallpaper (o projectswallpaper forza)"
-case ":$PATH:" in
-  *":$HOME/.local/bin:"*) ;;
-  *) echo "Per usare il comando projectswallpaper aggiungi ~/.local/bin al PATH, ad esempio in ~/.bashrc:"
-     echo "  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
-esac
+# Se era già aperta si chiude, così parte la versione nuova.
+pkill -f "$APP" 2>/dev/null || true
+sleep 1
+setsid -f python3 "$APP" >/dev/null 2>&1 < /dev/null
+
+echo "Installato: l'icona è nel vassoio di sistema e fa subito un giro."
+echo "Log: $DATI/registro.log"

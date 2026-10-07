@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=ProjectsWallpaper
+GenericName=Sfondo della Foresta
+Comment=La Foresta di Projects come sfondo, aggiornata ogni ora
+Exec=/usr/bin/python3 __HOME__/.local/share/projectswallpaper/projectswallpaper-app.py
+Icon=preferences-desktop-wallpaper
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel

@@ -1,10 +1,9 @@
 #!/bin/bash
 # Scarica la foto della Foresta e, se è cambiata, la mette come sfondo. La
-# lancia un timer systemd utente ogni ora (projectswallpaper.timer); a mano:
-#   systemctl --user start projectswallpaper.service
+# lancia l'app nel vassoio di sistema: ogni ora, al risveglio e dal menu.
 #
-# Il desktop si riconosce da XDG_CURRENT_DESKTOP, che installa.sh salva in
-# config.env perché i servizi systemd non sempre lo ricevono. Supportati:
+# Il desktop si riconosce da XDG_CURRENT_DESKTOP, che l'app riceve dalla
+# sessione grafica. Supportati:
 # GNOME (e Ubuntu, Budgie, Pantheon), Cinnamon, MATE, KDE Plasma, XFCE, sway;
 # per gli altri window manager su X11, feh.
 #
@@ -14,11 +13,11 @@
 set -euo pipefail
 
 INDIRIZZO="https://giacomoguaresi.github.io/ProjectsWallpaper/desktop.png"
-CARTELLA="$HOME/.local/share/projectswallpaper"   # fissa: la usa anche il .service
+CARTELLA="$HOME/.local/share/projectswallpaper"
 ULTIMA="$CARTELLA/ultima.png"       # l'ultima scaricata, con la data del server
 SCARICATA="$CARTELLA/scaricata.png"
 
-log() { echo "$*"; }   # sotto systemd finisce nel journal: journalctl --user -u projectswallpaper
+log() { echo "$*"; }   # l'app lo mette in registro.log, con data e ora
 
 mkdir -p "$CARTELLA"
 rm -f "$SCARICATA"
